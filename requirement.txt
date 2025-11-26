@@ -1,0 +1,11 @@
+flask
+pandas
+numpy
+scikit-learn
+sentence-transformers
+joblib
+nbformat
+matplotlib
+requests
+seaborn
+transformers
