@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Management System - Login/Register</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #e3f2fd;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 400px;
+            margin: 60px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #1976d2;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px 0;
+            border: 1px solid #90caf9;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #1565c0;
+        }
+
+        .switch-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        a {
+            color: #1976d2;
+            text-decoration: none;
+        }
+    </style>
+
+    <script>
+        function showLogin() {
+            document.getElementById("loginBox").style.display = "block";
+            document.getElementById("registerBox").style.display = "none";
+        }
+
+        function showRegister() {
+            document.getElementById("loginBox").style.display = "none";
+            document.getElementById("registerBox").style.display = "block";
+        }
+        
+          function togglePassword(id) {
+        let field = document.getElementById(id);
+        if (field.type === "password") {
+            field.type = "text";
+        } else {
+            field.type = "password";
+        }
+    }
+    function goToDashboard() {
+    window.location.href = "dashboard.html";
+    }
+ 
+    function validatePassword() {
+        let username = document.getElementById("username").value;
+        let email = document.getElementById("email").value;
+        let password = document.getElementById("password").value;
+        let confirmPassword = document.getElementById("confirmPassword").value;
+
+        let error = document.getElementById("errorMsg");
+        let success = document.getElementById("successMsg");
+
+        let minLength = password.length >= 8;
+        let hasUpper = /[A-Z]/.test(password);
+        let hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        
+        
+
+        if (!minLength || !hasUpper || !hasSpecial) {
+            error.style.display = "block";
+            error.innerHTML = "Password must contain:<br>• At least 8 characters<br>• One uppercase letter<br>• One special character";
+            success.style.display = "none";
+            return false;
+        }
+
+        if (password !== confirmPassword) {
+            error.style.display = "block";
+            error.innerHTML = "Passwords do not match!";
+            success.style.display = "none";
+            return false;
+        }
+
+        // Success
+        error.style.display = "none";
+        success.style.display = "block";
+        success.innerHTML = "Registration Successful! Redirecting to Login...";
+
+        // ⭐ Switch to Login form after 1 second
+        setTimeout(function() {
+            showLogin();
+        }, 1000);
+
+        return false; // stop form submission
+    }
+</script>
+
+
+
+
+
+</head>
+
+<body>
+
+    <div class="container" id="loginBox">
+        <h2>Login</h2>
+        <form action="/login" method="POST">
+            <input type="text" name="username" placeholder="Enter Username" required>
+            <input type="password" name="password" placeholder="Enter Password" required>
+            <button onclick="window.location.href='dashboard.html'" type="submit">Login</button>
+        </form>
+
+        <div class="switch-link">
+            <p>Don't have an account? <a href="#" onclick="showRegister()">Register</a></p>
+        </div>
+    </div>
+
+
+    <div class="container" id="registerBox" style="display:none;">
+    <h2>Register</h2>
+
+    <form id="registerForm" onsubmit="return validatePassword()">
+
+        <input type="text" id="username" placeholder="Enter Username" required>
+
+        <input type="email" id="email" placeholder="Enter Email" required>
+
+        <div style="position: relative;">
+            <input type="password" id="password" placeholder="Enter Password" required>
+            <span onclick="togglePassword('password')" style="position:absolute; right:10px; top:12px; cursor:pointer;">👁️</span>
+        </div>
+
+        <div style="position: relative;">
+            <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+            <span onclick="togglePassword('confirmPassword')" style="position:absolute; right:10px; top:12px; cursor:pointer;">👁️</span>
+        </div>
+
+    
+
+        <p id="errorMsg" style="color:red; font-size:14px; display:none;"></p>
+        <p id="successMsg" style="color:green; font-size:14px; display:none;"></p>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <div class="switch-link">
+        <p>Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+    </div>
+</div>
+
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Choose your pet — Login</title>
+  <link rel="stylesheet" href="quiz.css" />
+</head>
+<body>
+  <div class="login-container">
+    <h2>Choose your pet</h2>
+    <form id="loginForm">
+      <div>
+        <label>Email</label>
+        <input type="email" id="email" value="admin@gmail.com" required />
+      </div>
+      <div>
+        <label>Password</label>
+        <input type="password" id="password" value="admin@1234" required />
+      </div>
+      <button type="submit">Login</button>
+    </form>
+    <p id="loginMsg"></p>
+    <p><a href="/quiz">Start Quiz (no login required for demo)</a></p>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email, password})
+      });
+      const data = await res.json();
+      document.getElementById("loginMsg").innerText = data.message || JSON.stringify(data);
+    });
+  </script>
+</body>
+</html>

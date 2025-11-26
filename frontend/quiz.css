@@ -1,0 +1,16 @@
+body
+{font-family:Arial,Helvetica,sans-serif;background:#f5f6fa;padding:20px}
+.container
+{max-width:720px;margin:20px auto;background:#fff;padding:24px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.08)}
+h1
+{text-align:center;margin-bottom:18px}
+.q
+{margin-bottom:12px}
+label
+{display:block;margin-bottom:6px;font-weight:600}
+select,input
+{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd}
+button
+{display:block;margin:12px auto;padding:12px 20px;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+#result
+{margin-top:16px;padding:12px;background:#f0f8ff;border-radius:8px}
