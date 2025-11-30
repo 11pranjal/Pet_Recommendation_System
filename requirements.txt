@@ -11,3 +11,7 @@ joblib
 torch
 transformers
 Pillow
+nbformat
+matplotlib
+requests
+seaborn
