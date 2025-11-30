@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pet Adoption Quiz - Find Your Perfect Match</title>
+    <title>Search Pets - Describe Your Ideal Pet</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="pet-card-styles.css">
 </head>
@@ -17,105 +17,74 @@
             </div>
             <div class="nav-menu">
                 <a href="dashboard.html" class="nav-link">Dashboard</a>
-                <a href="quiz.html" class="nav-link active">Take Quiz</a>
-                <a href="search.html" class="nav-link">Search Pets</a>
+                <a href="quiz.html" class="nav-link">Take Quiz</a>
+                <a href="search.html" class="nav-link active">Search Pets</a>
                 <a href="browse.html" class="nav-link">Browse All</a>
                 <a href="#" onclick="logout()" class="nav-link">Logout</a>
             </div>
         </div>
     </nav>
 
-    <!-- Quiz Container -->
+    <!-- Search Container -->
     <div class="quiz-container">
         <div class="quiz-card">
             <div class="quiz-header">
-                <h1>📝 Pet Match Quiz</h1>
-                <p>Answer these questions to find your perfect pet companion!</p>
+                <h1>🔍 Smart Pet Search</h1>
+                <p>Describe your ideal pet in natural language and let AI find the perfect match!</p>
             </div>
 
-            <form id="quizForm">
-                <div class="form-group">
-                    <label for="pet_type">What type of pet are you interested in?</label>
-                    <select id="pet_type" name="pet_type">
-                        <option value="">Any type</option>
-                        <option value="dog">Dog</option>
-                        <option value="cat">Cat</option>
-                        <option value="bird">Bird</option>
-                        <option value="rabbit">Rabbit</option>
-                    </select>
-                    <div class="form-helper">Leave blank for recommendations across all pet types</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="size_preference">Preferred Size</label>
-                    <select id="size_preference" name="size_preference" required>
-                        <option value="2">Small (Easy to handle, less space)</option>
-                        <option value="1" selected>Medium (Balanced size)</option>
-                        <option value="0">Large (Bigger companion)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="energy_level">Your Activity Level</label>
-                    <select id="energy_level" name="energy_level" required>
-                        <option value="1">Low (Prefer calm pets, minimal exercise)</option>
-                        <option value="2" selected>Moderate (Some daily activity)</option>
-                        <option value="0">High (Very active, love outdoor activities)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="has_kids">Do you have children at home?</label>
-                    <select id="has_kids" name="has_kids" required>
-                        <option value="true">Yes, I have kids</option>
-                        <option value="false" selected>No kids</option>
-                    </select>
-                    <div class="form-helper">We'll prioritize kid-friendly pets</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="vaccinated_important">Is vaccination status important?</label>
-                    <select id="vaccinated_important" name="vaccinated_important" required>
-                        <option value="true" selected>Yes, must be vaccinated</option>
-                        <option value="false">Not required</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="shedding_tolerance">Shedding Tolerance (1-5)</label>
-                    <input type="range" id="shedding_tolerance" name="shedding_tolerance" min="1" max="5" value="3" required>
-                    <div class="form-helper">
-                        <span>Low tolerance (minimal shedding)</span>
-                        <span style="float: right;">High tolerance (shedding okay)</span>
+            <div class="search-box">
+                <form id="searchForm">
+                    <div class="form-group">
+                        <label for="searchQuery">Describe Your Ideal Pet</label>
+                        <textarea 
+                            id="searchQuery" 
+                            name="query" 
+                            rows="4" 
+                            placeholder="Example: I want a friendly, playful dog that's good with kids and has moderate energy. Prefer medium size and doesn't shed too much..."
+                            style="width: 100%; padding: 1rem; border: 2px solid var(--light-gray); border-radius: 0.5rem; font-size: 1rem;"
+                            required
+                        ></textarea>
+                        <div class="form-helper">Be as specific as you like! Mention traits, size, energy level, personality, etc.</div>
                     </div>
-                    <div style="text-align: center; margin-top: 0.5rem; font-weight: 600;">
-                        Level: <span id="sheddingValue">3</span>
+
+                    <div class="filter-group" style="margin-bottom: 1.5rem;">
+                        <label style="font-weight: 600;">Filter by Type:</label>
+                        <select id="petTypeFilter" class="filter-select">
+                            <option value="">All Types</option>
+                            <option value="dog">Dogs Only</option>
+                            <option value="cat">Cats Only</option>
+                            <option value="bird">Birds Only</option>
+                            <option value="rabbit">Rabbits Only</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <button type="submit" class="btn btn-primary btn-large">
+                            🔎 Search Pets
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Example Queries -->
+                <div style="margin-top: 2rem; padding: 1.5rem; background: var(--lighter-gray); border-radius: 0.5rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--dark);">💡 Example Searches:</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <button class="btn btn-outline" style="text-align: left; padding: 0.75rem 1rem;" onclick="useExample('I want a fluffy, friendly cat that loves to cuddle and is good with children')">
+                            "I want a fluffy, friendly cat that loves to cuddle and is good with children"
+                        </button>
+                        <button class="btn btn-outline" style="text-align: left; padding: 0.75rem 1rem;" onclick="useExample('Looking for an energetic, playful dog that loves outdoor activities and fetch')">
+                            "Looking for an energetic, playful dog that loves outdoor activities and fetch"
+                        </button>
+                        <button class="btn btn-outline" style="text-align: left; padding: 0.75rem 1rem;" onclick="useExample('I need a quiet, calm pet for apartment living. Low maintenance and gentle')">
+                            "I need a quiet, calm pet for apartment living. Low maintenance and gentle"
+                        </button>
+                        <button class="btn btn-outline" style="text-align: left; padding: 0.75rem 1rem;" onclick="useExample('Want a small, intelligent bird that can be social and vocal')">
+                            "Want a small, intelligent bird that can be social and vocal"
+                        </button>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="okay_with_meat_diet">Comfortable with meat-based diet?</label>
-                    <select id="okay_with_meat_diet" name="okay_with_meat_diet" required>
-                        <option value="true" selected>Yes, I can provide meat</option>
-                        <option value="false">No, prefer herbivore/vegetarian</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="age_preference">Preferred Age</label>
-                    <select id="age_preference" name="age_preference" required>
-                        <option value="0">Young (Puppy/Kitten, < 12 months)</option>
-                        <option value="1" selected>Adult (1-5 years)</option>
-                        <option value="2">Senior (5+ years, calm and settled)</option>
-                    </select>
-                </div>
-
-                <div style="text-align: center; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary btn-large">
-                        Find My Perfect Pet 🐾
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -124,8 +93,8 @@
         <div class="container">
             <div class="results-container">
                 <div class="results-header">
-                    <h2>🎉 Your Perfect Pet Matches!</h2>
-                    <p>We found <span id="resultCount">0</span> pets that match your preferences</p>
+                    <h2>🎯 Search Results</h2>
+                    <p>Found <span id="resultCount">0</span> pets matching: "<span id="searchQueryDisplay"></span>"</p>
                 </div>
                 <div id="resultsGrid"></div>
             </div>
@@ -136,7 +105,7 @@
     <div id="loading" style="display: none;">
         <div class="loading">
             <div class="spinner"></div>
-            <p>Finding your perfect matches...</p>
+            <p>Searching through our database...</p>
         </div>
     </div>
 
@@ -184,42 +153,40 @@
     </div>
 
     <script>
-        // Update shedding value display
-        document.getElementById('shedding_tolerance').addEventListener('input', function(e) {
-            document.getElementById('sheddingValue').textContent = e.target.value;
-        });
+        // Use example query
+        function useExample(query) {
+            document.getElementById('searchQuery').value = query;
+            document.getElementById('searchQuery').focus();
+        }
 
-        // Handle quiz form submission
-        document.getElementById('quizForm').addEventListener('submit', async function(e) {
+        // Handle search form submission
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            const query = document.getElementById('searchQuery').value.trim();
+            const petType = document.getElementById('petTypeFilter').value;
+            
+            if (query.length < 3) {
+                alert('Please enter at least 3 characters');
+                return;
+            }
             
             // Show loading
             document.getElementById('loading').style.display = 'block';
             document.getElementById('resultsSection').style.display = 'none';
-            
-            // Scroll to loading
             document.getElementById('loading').scrollIntoView({ behavior: 'smooth' });
-            
-            // Collect form data
-            const formData = new FormData(e.target);
-            const answers = {
-                pet_type: formData.get('pet_type'),
-                size_preference: parseInt(formData.get('size_preference')),
-                energy_level: parseInt(formData.get('energy_level')),
-                has_kids: formData.get('has_kids') === 'true',
-                vaccinated_important: formData.get('vaccinated_important') === 'true',
-                shedding_tolerance: parseInt(formData.get('shedding_tolerance')),
-                okay_with_meat_diet: formData.get('okay_with_meat_diet') === 'true',
-                age_preference: parseInt(formData.get('age_preference'))
-            };
             
             try {
                 // Call API
-                const response = await fetch('/api/recommend/quiz', {
+                const response = await fetch('/api/recommend/text', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     credentials: 'include',
-                    body: JSON.stringify({ answers, top_k: 5 })
+                    body: JSON.stringify({ 
+                        query: query,
+                        pet_type: petType || null,
+                        top_k: 5 
+                    })
                 });
                 
                 const data = await response.json();
@@ -228,6 +195,7 @@
                 document.getElementById('loading').style.display = 'none';
                 
                 if (data.ok) {
+                    document.getElementById('searchQueryDisplay').textContent = query;
                     displayResults(data.recommendations);
                 } else {
                     alert('Error: ' + data.message);
@@ -246,7 +214,7 @@
             resultsGrid.innerHTML = '';
             
             if (pets.length === 0) {
-                resultsGrid.innerHTML = '<p style="text-align: center; color: var(--gray);">No pets found matching your criteria. Please try adjusting your preferences.</p>';
+                resultsGrid.innerHTML = '<p style="text-align: center; color: var(--gray);">No pets found matching your description. Please try different keywords.</p>';
             } else {
                 pets.forEach(pet => {
                     const petCard = createPetCard(pet);
@@ -264,7 +232,6 @@
             
             return `
                 <div class="pet-card-with-image">
-                    <!-- Pet Image -->
                     <div class="pet-image-container">
                         <img 
                             src="${imageUrl}" 
@@ -273,10 +240,9 @@
                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'pet-image-error\\'><div class=\\'error-icon\\'>${petTypeIcon}</div><div class=\\'error-text\\'>${pet.name}</div></div>';"
                             loading="lazy"
                         >
-                        ${pet.days_in_shelter < 30 ? '<div class="image-badge badge-new">🆕 New Arrival</div>' : ''}
+                        ${pet.days_in_shelter < 30 ? '<div class="image-badge badge-new">🆕 New</div>' : ''}
                     </div>
                     
-                    <!-- Pet Content -->
                     <div class="pet-card-content">
                         <div class="pet-header-with-image">
                             <div class="pet-title-with-image">
@@ -292,12 +258,11 @@
                             </div>
                         </div>
                         
-                        <!-- Pet Details -->
                         <div class="pet-details-grid">
                             <div class="detail-item-with-icon">
                                 <div class="detail-icon">🎂</div>
                                 <div class="detail-label-with-icon">Age</div>
-                                <div class="detail-value-with-icon">${pet.age_months} months</div>
+                                <div class="detail-value-with-icon">${pet.age_months} mo</div>
                             </div>
                             <div class="detail-item-with-icon">
                                 <div class="detail-icon">📏</div>
@@ -310,49 +275,30 @@
                                 <div class="detail-value-with-icon">${pet.gender}</div>
                             </div>
                             <div class="detail-item-with-icon">
-                                <div class="detail-icon">🎨</div>
-                                <div class="detail-label-with-icon">Color</div>
-                                <div class="detail-value-with-icon">${pet.color}</div>
-                            </div>
-                            <div class="detail-item-with-icon">
-                                <div class="detail-icon">⚖️</div>
-                                <div class="detail-label-with-icon">Weight</div>
-                                <div class="detail-value-with-icon">${pet.weight_kg} kg</div>
-                            </div>
-                            <div class="detail-item-with-icon">
                                 <div class="detail-icon">⚡</div>
                                 <div class="detail-label-with-icon">Energy</div>
                                 <div class="detail-value-with-icon">${pet.energy_level}</div>
                             </div>
                         </div>
                         
-                        <!-- Description -->
                         <div class="pet-description-with-image">
                             💭 "${pet.description}"
                         </div>
                         
-                        <!-- Match Reason -->
-                        <div class="match-reason-with-image">
-                            <strong>Why Perfect for You:</strong> ${pet.match_reason}
-                        </div>
-                        
-                        <!-- Tags -->
                         <div class="pet-tags">
                             ${pet.vaccinated ? '<span class="pet-tag tag-vaccinated">💉 Vaccinated</span>' : ''}
                             ${pet.kid_friendly ? '<span class="pet-tag tag-kid-friendly">👶 Kid Friendly</span>' : ''}
-                            <span class="pet-tag tag-health">💚 ${pet.health_condition} Health</span>
-                            <span class="pet-tag tag-shelter">🏠 ${pet.days_in_shelter} days in shelter</span>
+                            <span class="pet-tag tag-health">💚 ${pet.health_condition}</span>
                         </div>
                         
-                        <!-- Actions -->
                         <div class="pet-actions-with-image">
                             <button class="btn-adopt" onclick="openAdoptionModal(${pet.id}, '${pet.name}', '${pet.type}')">
                                 💚 Adopt ${pet.name}
                             </button>
                             <button class="btn-details" onclick="viewPetDetails(${pet.id})">
-                                📋 View Full Profile
+                                📋 Profile
                             </button>
-                            <button class="btn-favorite" onclick="toggleFavorite(${pet.id})" title="Add to favorites">
+                            <button class="btn-favorite" onclick="toggleFavorite(${pet.id})">
                                 ❤️
                             </button>
                         </div>
@@ -362,7 +308,6 @@
         }
         
         function toggleFavorite(petId) {
-            // TODO: Implement favorite functionality
             alert('Favorite feature coming soon!');
         }
 
@@ -441,3 +386,4 @@
     </script>
 </body>
 </html>
+

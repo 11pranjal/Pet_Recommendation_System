@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse All Pets</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon">🐾</span>
+                <span class="logo-text">PetMatch</span>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="quiz.html" class="nav-link">Take Quiz</a>
+                <a href="search.html" class="nav-link">Search Pets</a>
+                <a href="browse.html" class="nav-link active">Browse All</a>
+                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="padding: 3rem 2rem;">
+        <div class="results-header">
+            <h1>Browse All Available Pets</h1>
+            <p>Showing <span id="petCount">0</span> adorable pets waiting for a home</p>
+        </div>
+
+        <div class="filter-group" style="justify-content: center; margin-bottom: 2rem;">
+            <select id="typeFilter" class="filter-select" onchange="loadPets()">
+                <option value="">All Types</option>
+                <option value="dog">Dogs</option>
+                <option value="cat">Cats</option>
+                <option value="bird">Birds</option>
+                <option value="rabbit">Rabbits</option>
+            </select>
+            <select id="sizeFilter" class="filter-select" onchange="loadPets()">
+                <option value="">All Sizes</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+            </select>
+            <select id="energyFilter" class="filter-select" onchange="loadPets()">
+                <option value="">All Energy Levels</option>
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+
+        <div id="loading" style="display: none;">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading pets...</p>
+            </div>
+        </div>
+
+        <div id="petsGrid" class="results-container"></div>
+    </div>
+
+    <script>
+        async function loadPets() {
+            const typeFilter = document.getElementById('typeFilter').value;
+            const sizeFilter = document.getElementById('sizeFilter').value;
+            const energyFilter = document.getElementById('energyFilter').value;
+            
+            const params = new URLSearchParams();
+            if (typeFilter) params.append('type', typeFilter);
+            if (sizeFilter) params.append('size', sizeFilter);
+            if (energyFilter) params.append('energy_level', energyFilter);
+            params.append('limit', '50');
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('petsGrid').innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/pets?' + params.toString(), {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.ok) {
+                    document.getElementById('petCount').textContent = data.count;
+                    displayPets(data.pets);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function displayPets(pets) {
+            const grid = document.getElementById('petsGrid');
+            
+            if (pets.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: var(--gray);">No pets found with selected filters.</p>';
+                return;
+            }
+            
+            grid.innerHTML = pets.map(pet => `
+                <div class="pet-card">
+                    <div class="pet-header">
+                        <div class="pet-title">
+                            <h3>${pet.name}</h3>
+                            <div class="pet-breed">${pet.type} • ${pet.breed}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="pet-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Age</div>
+                            <div class="detail-value">${pet.age_months} months</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Size</div>
+                            <div class="detail-value">${pet.size}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Gender</div>
+                            <div class="detail-value">${pet.gender}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Energy</div>
+                            <div class="detail-value">${pet.energy_level}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="pet-description">
+                        "${pet.description.substring(0, 100)}..."
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+                        ${pet.vaccinated ? '<span class="feature-tag" style="background: #d1fae5; color: #065f46;">✓ Vaccinated</span>' : ''}
+                        ${pet.kid_friendly ? '<span class="feature-tag" style="background: #dbeafe; color: #1e40af;">✓ Kid Friendly</span>' : ''}
+                    </div>
+                    
+                    <div class="pet-actions">
+                        <button class="btn btn-primary" onclick="viewDetails(${pet.id})">View Details</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewDetails(petId) {
+            window.location.href = `pet-details.html?id=${petId}`;
+        }
+
+        // Load pets on page load
+        window.addEventListener('DOMContentLoaded', loadPets);
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            }
+        }
+    </script>
+</body>
+</html>
+
