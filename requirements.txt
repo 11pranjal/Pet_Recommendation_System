@@ -1,0 +1,13 @@
+flask
+flask-cors
+flask-sqlalchemy
+flask-login
+flask-bcrypt
+pandas
+numpy
+scikit-learn
+sentence-transformers
+joblib
+torch
+transformers
+Pillow
