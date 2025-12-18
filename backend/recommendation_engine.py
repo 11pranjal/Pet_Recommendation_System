@@ -58,7 +58,7 @@ class PetRecommendationEngine:
         Recommend pets based on quiz answers
         
         Args:
-            user_answers: dict with quiz answers
+            user_answers: dict with quiz answers (all 11 questions)
             top_k: number of recommendations
             
         Returns:
@@ -70,24 +70,31 @@ class PetRecommendationEngine:
         # Scale features
         feature_scaled = self.knn_scaler.transform([feature_vector])
         
-        # Get KNN predictions with distances
-        distances, indices = self.knn_model.kneighbors(feature_scaled, n_neighbors=min(top_k, len(self.pets_database)))
+        # Get more candidates for filtering (request 3x to allow filtering)
+        n_candidates = min(top_k * 3, len(self.pets_database))
+        distances, indices = self.knn_model.kneighbors(feature_scaled, n_neighbors=n_candidates)
         
         # Convert distances to confidence percentage (0-100%)
-        # Smaller distance = higher confidence
         if distances[0].max() > 0:
             max_dist = distances[0].max()
-            # Normalize: confidence = (1 - normalized_distance) * 100
             confidences = [(1 - (dist / max_dist)) * 100 for dist in distances[0]]
         else:
             confidences = [100.0] * len(distances[0])
         
-        # Get pet recommendations
+        # Get pet recommendations with filtering
         recommendations = []
-        for rank, (pet_idx, confidence) in enumerate(zip(indices[0], confidences), 1):
+        for pet_idx, base_confidence in zip(indices[0], confidences):
             pet = self.pets_database[pet_idx].copy()
-            pet['match_score'] = round(confidence, 1)
-            pet['rank'] = rank
+            
+            # Apply smart filtering and scoring adjustments
+            filter_result = self._apply_filters(pet, user_answers)
+            if not filter_result['passes']:
+                continue  # Skip pets that don't meet hard requirements
+            
+            # Adjust confidence based on additional criteria
+            adjusted_confidence = base_confidence * filter_result['score_multiplier']
+            
+            pet['match_score'] = round(adjusted_confidence, 1)
             pet['match_reason'] = self._generate_match_reason(pet, user_answers)
             
             # Clean up - remove raw features from response
@@ -95,6 +102,14 @@ class PetRecommendationEngine:
                 del pet['raw_features']
             
             recommendations.append(pet)
+            
+            # Stop when we have enough recommendations
+            if len(recommendations) >= top_k:
+                break
+        
+        # Assign ranks
+        for rank, pet in enumerate(recommendations, 1):
+            pet['rank'] = rank
         
         return recommendations
     
@@ -192,8 +207,8 @@ class PetRecommendationEngine:
         """
         Convert quiz answers to feature vector matching training data
         
-        Expected quiz answers:
-        - pet_type: 0=bird, 1=cat, 2=dog, 3=rabbit (optional filter)
+        Expected quiz answers (11 total):
+        CORE FEATURES (used in ML model):
         - size_preference: 0=large, 1=medium, 2=small
         - energy_level: 0=high, 1=low, 2=moderate
         - has_kids: true/false
@@ -201,6 +216,12 @@ class PetRecommendationEngine:
         - shedding_tolerance: 0-5 (higher = more tolerant)
         - okay_with_meat_diet: true/false
         - age_preference: 0=young (<12 months), 1=adult (12-60), 2=senior (60+)
+        
+        ADDITIONAL FILTERS (used in post-filtering):
+        - home_type: "Apartment" | "House with a small yard" | "House with a large yard" | "Farm/Rural property"
+        - current_pets: true/false
+        - gender_preference: "Male" | "Female" | "No preference"
+        - health_condition_acceptance: "Yes" | "No" | "Depending on condition"
         
         Feature order must match training: 
         ['Size', 'EnergyLevel', 'kid_friendliness', 'Vaccinated',
@@ -231,8 +252,69 @@ class PetRecommendationEngine:
         return [size, energy_level, kid_friendly, vaccinated, 
                 shedding, meat_consumption, age_months, weight]
     
+    def _apply_filters(self, pet, answers):
+        """
+        Apply smart filtering based on additional quiz questions
+        
+        Returns:
+            dict with 'passes' (bool) and 'score_multiplier' (float 0.8-1.2)
+        """
+        score_multiplier = 1.0
+        
+        # Filter 1: Gender preference (hard filter)
+        gender_pref = answers.get('gender_preference', 'No preference')
+        if gender_pref != 'No preference':
+            if pet['gender'].lower() != gender_pref.lower():
+                return {'passes': False, 'score_multiplier': 0}
+        
+        # Filter 2: Home type and pet size compatibility
+        home_type = answers.get('home_type', '')
+        if home_type == 'Apartment':
+            # Penalize large, high-energy pets in apartments
+            if pet['size'] == 'Large' and pet['energy_level'] == 'High':
+                score_multiplier *= 0.85
+            # Bonus for small, low-energy pets
+            elif pet['size'] == 'Small' and pet['energy_level'] in ['Low', 'Moderate']:
+                score_multiplier *= 1.1
+        
+        elif home_type == 'House with a large yard':
+            # Bonus for high-energy pets
+            if pet['energy_level'] == 'High':
+                score_multiplier *= 1.15
+        
+        elif home_type == 'Farm/Rural property':
+            # Bonus for large, active pets
+            if pet['size'] in ['Large', 'Medium'] and pet['energy_level'] == 'High':
+                score_multiplier *= 1.2
+        
+        # Filter 3: Current pets consideration
+        has_current_pets = answers.get('current_pets', False)
+        if has_current_pets:
+            # Prefer social, friendly pets (we can infer from kid_friendly as proxy)
+            if pet['kid_friendly']:
+                score_multiplier *= 1.05
+        
+        # Filter 4: Health condition acceptance (hard filter for special needs)
+        health_acceptance = answers.get('health_condition_acceptance', 'Depending on condition')
+        if health_acceptance == 'No':
+            # Reject pets with poor health
+            if pet['health_condition'].lower() in ['poor', 'fair']:
+                return {'passes': False, 'score_multiplier': 0}
+        elif health_acceptance == 'Depending on condition':
+            # Accept good/excellent, penalize fair
+            if pet['health_condition'].lower() == 'fair':
+                score_multiplier *= 0.9
+            elif pet['health_condition'].lower() == 'poor':
+                return {'passes': False, 'score_multiplier': 0}
+        # If "Yes", accept all health conditions
+        
+        # Cap multiplier to reasonable range
+        score_multiplier = max(0.8, min(1.2, score_multiplier))
+        
+        return {'passes': True, 'score_multiplier': score_multiplier}
+    
     def _generate_match_reason(self, pet, answers):
-        """Generate human-readable match reason"""
+        """Generate human-readable match reason based on all 11 quiz questions"""
         reasons = []
         
         # Check kid friendliness
@@ -263,11 +345,34 @@ class PetRecommendationEngine:
             reasons.append("young and energetic")
         elif age_pref == 2 and pet['age_months'] > 60:
             reasons.append("mature and calm")
+        elif age_pref == 1 and 12 <= pet['age_months'] <= 60:
+            reasons.append("perfect adult age")
+        
+        # Check home type compatibility
+        home_type = answers.get('home_type', '')
+        if home_type == 'Apartment' and pet['size'] == 'Small':
+            reasons.append("apartment-friendly size")
+        elif home_type in ['House with a large yard', 'Farm/Rural property'] and pet['energy_level'] == 'High':
+            reasons.append("loves outdoor space")
+        
+        # Check gender match
+        gender_pref = answers.get('gender_preference', 'No preference')
+        if gender_pref != 'No preference' and pet['gender'].lower() == gender_pref.lower():
+            reasons.append(f"{pet['gender'].lower()} as requested")
+        
+        # Check health condition
+        if pet['health_condition'] == 'Excellent':
+            reasons.append("excellent health")
+        
+        # Check if good with other pets (using kid_friendly as proxy for sociability)
+        if answers.get('current_pets', False) and pet['kid_friendly']:
+            reasons.append("friendly with other pets")
         
         if not reasons:
             reasons.append("good overall match based on your preferences")
         
-        return "Perfect match: " + ", ".join(reasons[:3]) + "!"
+        # Return top 3-4 most relevant reasons
+        return "Perfect match: " + ", ".join(reasons[:4]) + "!"
     
     def get_statistics(self):
         """Get database statistics"""
