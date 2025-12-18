@@ -2,3 +2,4 @@ venv/
 instance/
 model/
 
+__pycache__/
