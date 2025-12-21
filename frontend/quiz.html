@@ -6,6 +6,164 @@
     <title>Pet Adoption Quiz - Find Your Perfect Match</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="pet-card-styles.css">
+    <style>
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: var(--lighter-gray);
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .question-counter {
+            text-align: center;
+            color: var(--gray);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .question-card {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .question-card.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-title {
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .radio-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .radio-option {
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--white);
+        }
+
+        .radio-option:hover {
+            border-color: var(--primary-color);
+            background: #f8f9ff;
+            transform: translateX(5px);
+        }
+
+        .radio-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 1rem;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .radio-option.selected {
+            border-color: var(--primary-color);
+            background: #f0f4ff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .radio-label {
+            font-size: 1rem;
+            color: var(--dark);
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }
+
+        .btn-nav {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-previous {
+            background: var(--lighter-gray);
+            color: var(--dark-gray);
+        }
+
+        .btn-previous:hover:not(:disabled) {
+            background: var(--light-gray);
+            transform: translateX(-3px);
+        }
+
+        .btn-previous:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-next {
+            background: var(--primary-color);
+            color: var(--white);
+            margin-left: auto;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            background: #4f46e5;
+            transform: translateX(3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-next:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-submit {
+            background: var(--success-color);
+            color: var(--white);
+            margin-left: auto;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: #059669;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -29,90 +187,233 @@
     <div class="quiz-container">
         <div class="quiz-card">
             <div class="quiz-header">
-                <h1>📝 Pet Match Quiz</h1>
-                <p>Answer these questions to find your perfect pet companion!</p>
+                <h1>🐾 Find Your Perfect Pet</h1>
+                <p>Answer these questions to discover your ideal pet companion!</p>
             </div>
 
+            <!-- Progress Bar -->
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 9.09%;"></div>
+            </div>
+            <div class="question-counter" id="questionCounter">Question 1 of 11</div>
+
+            <!-- Quiz Form -->
             <form id="quizForm">
-                <div class="form-group">
-                    <label for="pet_type">What type of pet are you interested in?</label>
-                    <select id="pet_type" name="pet_type">
-                        <option value="">Any type</option>
-                        <option value="dog">Dog</option>
-                        <option value="cat">Cat</option>
-                        <option value="bird">Bird</option>
-                        <option value="rabbit">Rabbit</option>
-                    </select>
-                    <div class="form-helper">Leave blank for recommendations across all pet types</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="size_preference">Preferred Size</label>
-                    <select id="size_preference" name="size_preference" required>
-                        <option value="2">Small (Easy to handle, less space)</option>
-                        <option value="1" selected>Medium (Balanced size)</option>
-                        <option value="0">Large (Bigger companion)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="energy_level">Your Activity Level</label>
-                    <select id="energy_level" name="energy_level" required>
-                        <option value="1">Low (Prefer calm pets, minimal exercise)</option>
-                        <option value="2" selected>Moderate (Some daily activity)</option>
-                        <option value="0">High (Very active, love outdoor activities)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="has_kids">Do you have children at home?</label>
-                    <select id="has_kids" name="has_kids" required>
-                        <option value="true">Yes, I have kids</option>
-                        <option value="false" selected>No kids</option>
-                    </select>
-                    <div class="form-helper">We'll prioritize kid-friendly pets</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="vaccinated_important">Is vaccination status important?</label>
-                    <select id="vaccinated_important" name="vaccinated_important" required>
-                        <option value="true" selected>Yes, must be vaccinated</option>
-                        <option value="false">Not required</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="shedding_tolerance">Shedding Tolerance (1-5)</label>
-                    <input type="range" id="shedding_tolerance" name="shedding_tolerance" min="1" max="5" value="3" required>
-                    <div class="form-helper">
-                        <span>Low tolerance (minimal shedding)</span>
-                        <span style="float: right;">High tolerance (shedding okay)</span>
-                    </div>
-                    <div style="text-align: center; margin-top: 0.5rem; font-weight: 600;">
-                        Level: <span id="sheddingValue">3</span>
+                <!-- Question 1: Home Type -->
+                <div class="question-card active" data-question="1">
+                    <h3 class="question-title">1. What type of home do you live in?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="home_type" value="Apartment">
+                            <span class="radio-label">Apartment</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="home_type" value="House with small yard">
+                            <span class="radio-label">House with a small yard</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="home_type" value="House with large yard">
+                            <span class="radio-label">House with a large yard</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="home_type" value="Farm/Rural property">
+                            <span class="radio-label">Farm/Rural property</span>
+                        </label>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="okay_with_meat_diet">Comfortable with meat-based diet?</label>
-                    <select id="okay_with_meat_diet" name="okay_with_meat_diet" required>
-                        <option value="true" selected>Yes, I can provide meat</option>
-                        <option value="false">No, prefer herbivore/vegetarian</option>
-                    </select>
+                <!-- Question 2: Activity Level -->
+                <div class="question-card" data-question="2">
+                    <h3 class="question-title">2. How active are you on a daily basis?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="activity_level" value="Low">
+                            <span class="radio-label">Low</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="activity_level" value="Moderate">
+                            <span class="radio-label">Moderate</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="activity_level" value="High">
+                            <span class="radio-label">High</span>
+                        </label>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="age_preference">Preferred Age</label>
-                    <select id="age_preference" name="age_preference" required>
-                        <option value="0">Young (Puppy/Kitten, < 12 months)</option>
-                        <option value="1" selected>Adult (1-5 years)</option>
-                        <option value="2">Senior (5+ years, calm and settled)</option>
-                    </select>
+                <!-- Question 3: Children -->
+                <div class="question-card" data-question="3">
+                    <h3 class="question-title">3. Do you have children at home?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="children" value="Yes">
+                            <span class="radio-label">Yes</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="children" value="No">
+                            <span class="radio-label">No</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="children" value="Plan to have">
+                            <span class="radio-label">Plan to have</span>
+                        </label>
+                    </div>
                 </div>
 
-                <div style="text-align: center; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary btn-large">
-                        Find My Perfect Pet 🐾
+                <!-- Question 4: Current Pets -->
+                <div class="question-card" data-question="4">
+                    <h3 class="question-title">4. Do you currently have other pets?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="current_pet" value="Yes">
+                            <span class="radio-label">Yes</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="current_pet" value="No">
+                            <span class="radio-label">No</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 5: Preferred Age -->
+                <div class="question-card" data-question="5">
+                    <h3 class="question-title">5. What age range do you prefer for your pet?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="age_range" value="Puppy">
+                            <span class="radio-label">Puppy</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="age_range" value="Adult">
+                            <span class="radio-label">Adult</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="age_range" value="Senior">
+                            <span class="radio-label">Senior</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 6: Size Preference -->
+                <div class="question-card" data-question="6">
+                    <h3 class="question-title">6. Do you have a preference for the size of your pet?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="size" value="Small">
+                            <span class="radio-label">Small</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="size" value="Medium">
+                            <span class="radio-label">Medium</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="size" value="Large">
+                            <span class="radio-label">Large</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 7: Gender Preference -->
+                <div class="question-card" data-question="7">
+                    <h3 class="question-title">7. Do you have a preference for your pet's gender?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="gender" value="Male">
+                            <span class="radio-label">Male</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="gender" value="Female">
+                            <span class="radio-label">Female</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="gender" value="No preference">
+                            <span class="radio-label">No preference</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 8: Grooming -->
+                <div class="question-card" data-question="8">
+                    <h3 class="question-title">8. How much grooming are you willing to do?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="grooming" value="Very Little">
+                            <span class="radio-label">Very Little</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="grooming" value="Moderate">
+                            <span class="radio-label">Moderate</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="grooming" value="High">
+                            <span class="radio-label">High</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 9: Meat-based Diet -->
+                <div class="question-card" data-question="9">
+                    <h3 class="question-title">9. Do you follow a meat-based diet?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="meat_diet" value="Yes">
+                            <span class="radio-label">Yes</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="meat_diet" value="No">
+                            <span class="radio-label">No</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 10: Vaccination Importance -->
+                <div class="question-card" data-question="10">
+                    <h3 class="question-title">10. How important is it that your potential pet is already vaccinated?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="vaccination" value="Very important">
+                            <span class="radio-label">Very important</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="vaccination" value="Somewhat important">
+                            <span class="radio-label">Somewhat important</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="vaccination" value="Not important">
+                            <span class="radio-label">Not important</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 11: Health Condition -->
+                <div class="question-card" data-question="11">
+                    <h3 class="question-title">11. Are you open to adopting a pet with a known health condition that might require ongoing care?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="health_condition" value="Yes">
+                            <span class="radio-label">Yes</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="health_condition" value="No">
+                            <span class="radio-label">No</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="health_condition" value="Depending on condition">
+                            <span class="radio-label">Depending on condition</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="navigation-buttons">
+                    <button type="button" class="btn-nav btn-previous" id="prevBtn" disabled>
+                        ← Previous
+                    </button>
+                    <button type="button" class="btn-nav btn-next" id="nextBtn" disabled>
+                        Next →
+                    </button>
+                    <button type="submit" class="btn-nav btn-submit" id="submitBtn" style="display: none;" disabled>
+                        Get My Matches! 🎉
                     </button>
                 </div>
             </form>
@@ -126,6 +427,7 @@
                 <div class="results-header">
                     <h2>🎉 Your Perfect Pet Matches!</h2>
                     <p>We found <span id="resultCount">0</span> pets that match your preferences</p>
+                    <button class="btn btn-secondary" onclick="retakeQuiz()" style="margin-top: 1rem;">Take Quiz Again</button>
                 </div>
                 <div id="resultsGrid"></div>
             </div>
@@ -184,34 +486,179 @@
     </div>
 
     <script>
-        // Update shedding value display
-        document.getElementById('shedding_tolerance').addEventListener('input', function(e) {
-            document.getElementById('sheddingValue').textContent = e.target.value;
+        // Quiz navigation state
+        let currentQuestion = 1;
+        const totalQuestions = 11;
+        const answers = {};
+
+        // DOM elements
+        const quizForm = document.getElementById('quizForm');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressBar = document.getElementById('progressBar');
+        const questionCounter = document.getElementById('questionCounter');
+
+        // Initialize quiz
+        function initQuiz() {
+            updateQuestionDisplay();
+            attachRadioListeners();
+        }
+
+        // Attach event listeners to all radio buttons
+        function attachRadioListeners() {
+            const radioButtons = document.querySelectorAll('input[type="radio"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // Update answers object
+                    answers[this.name] = this.value;
+                    
+                    // Update visual selection
+                    const parent = this.closest('.radio-options');
+                    parent.querySelectorAll('.radio-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    this.closest('.radio-option').classList.add('selected');
+                    
+                    // Enable next/submit button
+                    updateNavigationButtons();
+                });
+            });
+        }
+
+        // Update question display
+        function updateQuestionDisplay() {
+            // Hide all questions
+            document.querySelectorAll('.question-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // Show current question
+            const currentCard = document.querySelector(`.question-card[data-question="${currentQuestion}"]`);
+            if (currentCard) {
+                currentCard.classList.add('active');
+                
+                // Restore previous selection if any
+                const questionName = currentCard.querySelector('input[type="radio"]').name;
+                if (answers[questionName]) {
+                    const selectedRadio = currentCard.querySelector(`input[value="${answers[questionName]}"]`);
+                    if (selectedRadio) {
+                        selectedRadio.checked = true;
+                        selectedRadio.closest('.radio-option').classList.add('selected');
+                    }
+                }
+            }
+            
+            // Update progress bar
+            const progress = (currentQuestion / totalQuestions) * 100;
+            progressBar.style.width = progress + '%';
+            
+            // Update counter
+            questionCounter.textContent = `Question ${currentQuestion} of ${totalQuestions}`;
+            
+            // Update navigation buttons
+            updateNavigationButtons();
+        }
+
+        // Update navigation button states
+        function updateNavigationButtons() {
+            // Previous button
+            prevBtn.disabled = currentQuestion === 1;
+            
+            // Check if current question is answered
+            const currentCard = document.querySelector(`.question-card[data-question="${currentQuestion}"]`);
+            const questionName = currentCard.querySelector('input[type="radio"]').name;
+            const isAnswered = answers[questionName] !== undefined;
+            
+            // Next/Submit button logic
+            if (currentQuestion === totalQuestions) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'flex';
+                submitBtn.disabled = !isAnswered;
+            } else {
+                nextBtn.style.display = 'flex';
+                submitBtn.style.display = 'none';
+                nextBtn.disabled = !isAnswered;
+            }
+        }
+
+        // Previous button click
+        prevBtn.addEventListener('click', function() {
+            if (currentQuestion > 1) {
+                currentQuestion--;
+                updateQuestionDisplay();
+            }
         });
 
+        // Next button click
+        nextBtn.addEventListener('click', function() {
+            if (currentQuestion < totalQuestions) {
+                currentQuestion++;
+                updateQuestionDisplay();
+            }
+        });
+
+        // Map quiz answers to API format
+        function mapAnswersToAPI(quizAnswers) {
+            // Map size
+            let sizePreference = 1; // default medium
+            if (quizAnswers.size === 'Small') sizePreference = 2;
+            else if (quizAnswers.size === 'Medium') sizePreference = 1;
+            else if (quizAnswers.size === 'Large') sizePreference = 0;
+            
+            // Map activity/energy level
+            let energyLevel = 2; // default moderate
+            if (quizAnswers.activity_level === 'Low') energyLevel = 1;
+            else if (quizAnswers.activity_level === 'Moderate') energyLevel = 2;
+            else if (quizAnswers.activity_level === 'High') energyLevel = 0;
+            
+            // Map children to has_kids
+            const hasKids = quizAnswers.children === 'Yes' || quizAnswers.children === 'Plan to have';
+            
+            // Map vaccination importance
+            const vaccinatedImportant = quizAnswers.vaccination === 'Very important' || 
+                                       quizAnswers.vaccination === 'Somewhat important';
+            
+            // Map grooming to shedding tolerance (inverse relationship)
+            let sheddingTolerance = 3;
+            if (quizAnswers.grooming === 'Very Little') sheddingTolerance = 1;
+            else if (quizAnswers.grooming === 'Moderate') sheddingTolerance = 3;
+            else if (quizAnswers.grooming === 'High') sheddingTolerance = 5;
+            
+            // Map meat diet
+            const okayWithMeatDiet = quizAnswers.meat_diet === 'Yes';
+            
+            // Map age range
+            let agePreference = 1; // default adult
+            if (quizAnswers.age_range === 'Puppy') agePreference = 0;
+            else if (quizAnswers.age_range === 'Adult') agePreference = 1;
+            else if (quizAnswers.age_range === 'Senior') agePreference = 2;
+            
+            return {
+                size_preference: sizePreference,
+                energy_level: energyLevel,
+                has_kids: hasKids,
+                vaccinated_important: vaccinatedImportant,
+                shedding_tolerance: sheddingTolerance,
+                okay_with_meat_diet: okayWithMeatDiet,
+                age_preference: agePreference
+            };
+        }
+
         // Handle quiz form submission
-        document.getElementById('quizForm').addEventListener('submit', async function(e) {
+        quizForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Show loading
+            document.querySelector('.quiz-container').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
             document.getElementById('resultsSection').style.display = 'none';
             
             // Scroll to loading
-            document.getElementById('loading').scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             
-            // Collect form data
-            const formData = new FormData(e.target);
-            const answers = {
-                pet_type: formData.get('pet_type'),
-                size_preference: parseInt(formData.get('size_preference')),
-                energy_level: parseInt(formData.get('energy_level')),
-                has_kids: formData.get('has_kids') === 'true',
-                vaccinated_important: formData.get('vaccinated_important') === 'true',
-                shedding_tolerance: parseInt(formData.get('shedding_tolerance')),
-                okay_with_meat_diet: formData.get('okay_with_meat_diet') === 'true',
-                age_preference: parseInt(formData.get('age_preference'))
-            };
+            // Map answers to API format
+            const apiAnswers = mapAnswersToAPI(answers);
             
             try {
                 // Call API
@@ -219,7 +666,7 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     credentials: 'include',
-                    body: JSON.stringify({ answers, top_k: 5 })
+                    body: JSON.stringify({ answers: apiAnswers, top_k: 5 })
                 });
                 
                 const data = await response.json();
@@ -231,10 +678,12 @@
                     displayResults(data.recommendations);
                 } else {
                     alert('Error: ' + data.message);
+                    document.querySelector('.quiz-container').style.display = 'block';
                 }
             } catch (error) {
                 document.getElementById('loading').style.display = 'none';
                 alert('Error: ' + error.message);
+                document.querySelector('.quiz-container').style.display = 'block';
             }
         });
 
@@ -255,7 +704,7 @@
             }
             
             document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function createPetCard(pet) {
@@ -361,6 +810,32 @@
             `;
         }
         
+        function retakeQuiz() {
+            // Reset quiz state
+            currentQuestion = 1;
+            Object.keys(answers).forEach(key => delete answers[key]);
+            
+            // Uncheck all radio buttons
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            // Remove all selected classes
+            document.querySelectorAll('.radio-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Hide results and show quiz
+            document.getElementById('resultsSection').style.display = 'none';
+            document.querySelector('.quiz-container').style.display = 'block';
+            
+            // Reset display
+            updateQuestionDisplay();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
         function toggleFavorite(petId) {
             // TODO: Implement favorite functionality
             alert('Favorite feature coming soon!');
@@ -438,6 +913,11 @@
                 window.location.href = '/login';
             }
         }
+
+        // Initialize quiz on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initQuiz();
+        });
     </script>
 </body>
 </html>
