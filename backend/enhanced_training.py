@@ -18,7 +18,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Paths
-CSV_PATH = "dataset/final_refined_pet.csv"
+CSV_PATH = "dataset/final_refined_pet.csv"  # KNN training data with all fields
+CSV_PATH_SBERT = "dataset/sbert_refined_data_with_breed_characteristics_gender_full_enhanced.csv"  # SBERT with enhanced characteristics
 MODEL_DIR = "model"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -153,6 +154,24 @@ def load_and_prepare_dataset():
     print(f"Dataset loaded: {len(df)} pets")
     print(f"Columns: {list(df.columns)}")
     
+    # Load enhanced characteristics dataset
+    try:
+        sbert_df = pd.read_csv(CSV_PATH_SBERT)
+        print(f"✓ Loaded enhanced characteristics from SBERT dataset")
+        
+        # Create mapping of PetID to enhanced characteristics AND pet_details
+        enhanced_chars = {}
+        pet_details_map = {}
+        for _, row in sbert_df.iterrows():
+            pet_id = int(row['PetID'])
+            enhanced_chars[pet_id] = row['pet_characteristics']
+            if 'pet_details' in row and pd.notna(row['pet_details']):
+                pet_details_map[pet_id] = row['pet_details']
+    except FileNotFoundError:
+        print("⚠️  Enhanced dataset not found, using default")
+        enhanced_chars = {}
+        pet_details_map = {}
+    
     # Create pets database
     pets_database = []
     pet_counter = {0: 0, 1: 0, 2: 0, 3: 0}  # Counter for each pet type
@@ -160,16 +179,17 @@ def load_and_prepare_dataset():
     for idx, row in df.iterrows():
         pet_type = int(row['PetType'])
         breed_code = int(row['Breed'])
+        pet_id = int(row['PetID'])
         
         # Generate unique name based on pet type
         pet_name = generate_pet_name(pet_type, pet_counter[pet_type])
         pet_counter[pet_type] += 1
         
         # Generate unique seed for consistent images
-        image_seed = int(row['PetID']) * 1000 + pet_type * 100
+        image_seed = pet_id * 1000 + pet_type * 100
         
         pet_info = {
-            'id': int(row['PetID']),
+            'id': pet_id,
             'index': idx,  # Row index for KNN
             'name': pet_name,
             'type': PET_TYPE_MAPPING[pet_type],
@@ -189,7 +209,11 @@ def load_and_prepare_dataset():
             'meat_consumption': bool(row['MeatConsumption']),
             'kid_friendly': bool(row['kid_friendliness']),
             'energy_level': ENERGY_MAPPING[int(row['EnergyLevel'])],
-            'image_url': generate_pet_image(pet_type, int(row['PetID']), image_seed),
+            'image_url': generate_pet_image(pet_type, pet_id, image_seed),
+            # Add enhanced physical characteristics if available
+            'pet_characteristics': enhanced_chars.get(pet_id, ""),
+            # Add pet_details from SBERT dataset (personality, behavior traits)
+            'pet_details': pet_details_map.get(pet_id, row['pet_details']),  # Use SBERT details if available, else use KNN details
             # Keep raw features for KNN matching
             'raw_features': {
                 'PetType': pet_type,
@@ -256,10 +280,24 @@ def train_knn_model(df):
     return knn, scaler, X_scaled
 
 def train_sbert_model(pets_database):
-    """Create SBERT embeddings for text-based search"""
+    """Create SBERT embeddings for text-based search with enhanced characteristics"""
     print("\n" + "="*50)
     print("Creating SBERT Embeddings...")
     print("="*50)
+    
+    # Load enhanced SBERT dataset for better physical characteristics
+    try:
+        sbert_df = pd.read_csv(CSV_PATH_SBERT)
+        print(f"✓ Loaded enhanced SBERT dataset: {len(sbert_df)} pets")
+        
+        # Create mapping of PetID to enhanced characteristics
+        enhanced_chars = {}
+        for _, row in sbert_df.iterrows():
+            enhanced_chars[int(row['PetID'])] = row['pet_characteristics']
+        
+    except FileNotFoundError:
+        print("⚠️  Enhanced dataset not found, using default characteristics")
+        enhanced_chars = {}
     
     # Load SBERT model (lightweight and fast)
     print("Loading SBERT model: all-MiniLM-L6-v2")
@@ -282,7 +320,11 @@ def train_sbert_model(pets_database):
             text += "Excellent health. "
         
         # Add personality description
-        text += f"Personality: {pet['description']}"
+        text += f"Personality: {pet['description']}. "
+        
+        # Add enhanced physical characteristics if available
+        if pet.get('pet_id') in enhanced_chars:
+            text += f"Physical characteristics: {enhanced_chars[pet['pet_id']]}."
         
         pet_texts.append(text)
     
