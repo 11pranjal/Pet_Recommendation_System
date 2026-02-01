@@ -122,8 +122,8 @@ def api_register():
         if not re.search(r'\d', password):
             return jsonify({"ok": False, "message": "Password must contain at least one number"}), 400
         
-        if not re.search(r'[@$!%*?&]', password):
-            return jsonify({"ok": False, "message": "Password must contain at least one special character (@$!%*?&)"}), 400
+        if not re.search(r'[@$!%*?&#]', password):
+            return jsonify({"ok": False, "message": "Password must contain at least one special character (@$!%*?&#)"}), 400
         
         # Check if user exists
         if User.query.filter_by(username=username).first():

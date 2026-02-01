@@ -179,7 +179,7 @@
                                 </div>
                                 <div class="criteria-item" id="criteria-special">
                                     <span class="criteria-icon">⭕</span>
-                                    One special character (@$!%*?&)
+                                    One special character (@$!%*?&#)
                                 </div>
                             </div>
                         </div>
@@ -256,7 +256,7 @@
             const hasUppercase = /[A-Z]/.test(password);
             const hasLowercase = /[a-z]/.test(password);
             const hasNumber = /\d/.test(password);
-            const hasSpecial = /[@$!%*?&]/.test(password);
+            const hasSpecial = /[@$!%*?&#]/.test(password);
             
             // Update criteria UI
             updateCriteria('criteria-length', hasLength);
