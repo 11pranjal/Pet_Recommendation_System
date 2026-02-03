@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Your View - PetMatch</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .choice-container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .welcome-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        .welcome-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-header p {
+            font-size: 1.25rem;
+            opacity: 0.95;
+        }
+
+        .choice-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .choice-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .choice-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .choice-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .choice-card h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .choice-card p {
+            color: var(--gray);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .choice-btn {
+            display: inline-block;
+            padding: 1rem 3rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-customer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-customer:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a3f91 100%);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-admin:hover {
+            background: linear-gradient(135deg, #e082ea 0%, #e4465b 100%);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .logout-link {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .logout-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        .logout-link a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .features-list {
+            text-align: left;
+            margin: 1.5rem 0;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .features-list li {
+            padding: 0.5rem 0;
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        .features-list li:before {
+            content: "✓ ";
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="choice-container">
+        <div class="welcome-header">
+            <h1>Welcome, <span id="userName">Admin</span>! 👋</h1>
+            <p>Choose how you'd like to explore PetMatch today</p>
+        </div>
+
+        <div class="choice-cards">
+            <!-- Customer View -->
+            <div class="choice-card" onclick="window.location.href='/dashboard'">
+                <div class="choice-icon">🐾</div>
+                <h2>Customer View</h2>
+                <p>Browse and adopt pets as a regular user</p>
+                <ul class="features-list">
+                    <li>Take personalized quiz</li>
+                    <li>Search for pets</li>
+                    <li>Submit adoption requests</li>
+                    <li>Manage favorites</li>
+                </ul>
+                <a href="/dashboard" class="choice-btn btn-customer">Enter Customer View</a>
+            </div>
+
+            <!-- Admin Panel -->
+            <div class="choice-card" onclick="window.location.href='/admin-dashboard'">
+                <div class="choice-icon">⚙️</div>
+                <h2>Admin Panel</h2>
+                <p>Manage the pet adoption system</p>
+                <ul class="features-list">
+                    <li>Manage adoption requests</li>
+                    <li>View all users</li>
+                    <li>System statistics</li>
+                    <li>Admin controls</li>
+                </ul>
+                <a href="/admin-dashboard" class="choice-btn btn-admin">Enter Admin Panel</a>
+            </div>
+        </div>
+
+        <div class="logout-link">
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user/me', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.ok && data.user.is_admin) {
+                    currentUser = data.user;
+                    const userName = currentUser.full_name || currentUser.username;
+                    document.getElementById('userName').textContent = userName;
+                } else {
+                    // Not an admin, redirect to regular dashboard
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Check auth on page load
+        window.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+</body>
+</html>

@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Pets - PetMatch Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon">⚙️</span>
+                <span class="logo-text">PetMatch Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/admin-dashboard" class="nav-link">Dashboard</a>
+                <a href="/admin-adoptions.html" class="nav-link">Adoptions</a>
+                <a href="/admin-users.html" class="nav-link">Users</a>
+                <a href="/admin-pets.html" class="nav-link active">Pets</a>
+                <a href="/dashboard" class="nav-link">Customer View</a>
+                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <!-- Page Header -->
+        <div class="section-header">
+            <h1 class="section-title">Pet Management</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-primary" onclick="openAddModal()">
+                    ➕ Add New Pet
+                </button>
+                <button class="btn btn-secondary" onclick="toggleShowHidden()">
+                    <span id="showHiddenText">Show Hidden Pets</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" style="margin-bottom: 2rem;">
+            <div class="stat-card info">
+                <div class="stat-card-header">
+                    <div>
+                        <div class="stat-value" id="totalPets">0</div>
+                        <div class="stat-label">Total Pets</div>
+                    </div>
+                    <div class="stat-icon">🐾</div>
+                </div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-card-header">
+                    <div>
+                        <div class="stat-value" id="availablePets">0</div>
+                        <div class="stat-label">Available</div>
+                    </div>
+                    <div class="stat-icon">✅</div>
+                </div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-card-header">
+                    <div>
+                        <div class="stat-value" id="adoptedPets">0</div>
+                        <div class="stat-label">Adopted</div>
+                    </div>
+                    <div class="stat-icon">🏠</div>
+                </div>
+            </div>
+            <div class="stat-card danger">
+                <div class="stat-card-header">
+                    <div>
+                        <div class="stat-value" id="hiddenPets">0</div>
+                        <div class="stat-label">Hidden</div>
+                    </div>
+                    <div class="stat-icon">🚫</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Pet Type:</label>
+                <select id="petTypeFilter" class="filter-select" onchange="filterPets()">
+                    <option value="">All Types</option>
+                    <option value="Dog">Dog</option>
+                    <option value="Cat">Cat</option>
+                    <option value="Bird">Bird</option>
+                    <option value="Rabbit">Rabbit</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Size:</label>
+                <select id="sizeFilter" class="filter-select" onchange="filterPets()">
+                    <option value="">All Sizes</option>
+                    <option value="Small">Small</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Large">Large</option>
+                </select>
+            </div>
+
+            <div class="filter-group" style="flex: 1;">
+                <label>Search:</label>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="filter-input" 
+                    placeholder="Search by name or breed..."
+                    onkeyup="filterPets()"
+                >
+            </div>
+        </div>
+
+        <!-- Pets Table -->
+        <div class="data-table" id="petsTable">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading pets...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Viewing Pet Details -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Pet Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Hide Confirmation -->
+    <div id="hideModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Hide Pet</h2>
+                <button class="modal-close" onclick="closeHideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem;">Are you sure you want to hide <strong id="hidePetName"></strong>?</p>
+                <p style="color: var(--gray); font-size: 0.875rem; margin-bottom: 1.5rem;">This pet will be removed from all listings until you unhide it.</p>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Reason (optional):</label>
+                    <input 
+                        type="text" 
+                        id="hideReason" 
+                        class="filter-input" 
+                        placeholder="e.g., Health issues, temporary removal"
+                        style="width: 100%;"
+                    >
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeHideModal()">Cancel</button>
+                <button class="btn-action btn-delete" onclick="confirmHide()">Hide Pet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Add New Pet -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Add New Pet</h2>
+                <button class="modal-close" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addPetForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Name *</label>
+                        <input type="text" id="petName" class="filter-input" required style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type *</label>
+                        <select id="petType" class="filter-select" required style="width: 100%;">
+                            <option value="">Select Type</option>
+                            <option value="Dog">Dog</option>
+                            <option value="Cat">Cat</option>
+                            <option value="Bird">Bird</option>
+                            <option value="Rabbit">Rabbit</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Breed *</label>
+                        <input type="text" id="petBreed" class="filter-input" required style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Age (years) *</label>
+                        <input type="number" id="petAge" class="filter-input" required min="0" max="30" style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Size *</label>
+                        <select id="petSize" class="filter-select" required style="width: 100%;">
+                            <option value="">Select Size</option>
+                            <option value="Small">Small</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Large">Large</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Color *</label>
+                        <input type="text" id="petColor" class="filter-input" required style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Gender *</label>
+                        <select id="petGender" class="filter-select" required style="width: 100%;">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Weight (kg) *</label>
+                        <input type="number" id="petWeight" class="filter-input" required min="0" step="0.1" style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Vaccinated *</label>
+                        <select id="petVaccinated" class="filter-select" required style="width: 100%;">
+                            <option value="">Select</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Health Condition *</label>
+                        <select id="petHealth" class="filter-select" required style="width: 100%;">
+                            <option value="">Select</option>
+                            <option value="Excellent">Excellent</option>
+                            <option value="Good">Good</option>
+                            <option value="Fair">Fair</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Kid Friendly *</label>
+                        <select id="petKidFriendly" class="filter-select" required style="width: 100%;">
+                            <option value="">Select</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Energy Level *</label>
+                        <select id="petEnergy" class="filter-select" required style="width: 100%;">
+                            <option value="">Select</option>
+                            <option value="Low">Low</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                    
+                    <div style="grid-column: 1 / -1;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
+                        <textarea id="petDescription" class="filter-input" rows="3" style="width: 100%; resize: vertical;" placeholder="Describe the pet's personality and characteristics..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitAddPet()">Add Pet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Delete Confirmation -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Delete Pet Permanently</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem;">Are you sure you want to <strong style="color: var(--admin-danger);">permanently delete</strong> <strong id="deletePetName"></strong>?</p>
+                <p style="color: var(--admin-danger); font-weight: 600; margin-bottom: 1rem;">⚠️ This action CANNOT be undone!</p>
+                <p style="color: var(--gray); font-size: 0.875rem; margin-bottom: 1.5rem;">This pet will be completely removed from the database. All adoption requests for this pet will also be deleted.</p>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type "DELETE" to confirm:</label>
+                    <input 
+                        type="text" 
+                        id="deleteConfirmInput" 
+                        class="filter-input" 
+                        placeholder="Type DELETE in capital letters"
+                        style="width: 100%;"
+                    >
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn-action btn-delete" onclick="confirmDelete()" style="background: #991b1b;">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let allPets = [];
+        let filteredPets = [];
+        let adoptedPetIds = new Set();
+        let hiddenPetIds = new Set();
+        let stats = {};
+        let showHidden = false;
+        let petToHide = null;
+        let petToDelete = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user/me', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.ok && data.user.is_admin) {
+                    currentUser = data.user;
+                    loadStats();
+                    loadPets();
+                } else {
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    stats = data.stats;
+                    document.getElementById('totalPets').textContent = stats.total_pets || 0;
+                    document.getElementById('availablePets').textContent = stats.available_pets || stats.total_pets || 0;
+                    document.getElementById('adoptedPets').textContent = stats.adopted_pets || 0;
+                }
+
+                // Get hidden pets count
+                const hiddenResponse = await fetch('/api/admin/hidden-pets', {
+                    credentials: 'include'
+                });
+                
+                if (hiddenResponse.ok) {
+                    const hiddenData = await hiddenResponse.json();
+                    if (hiddenData.ok) {
+                        document.getElementById('hiddenPets').textContent = hiddenData.count || 0;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load pets
+        async function loadPets() {
+            try {
+                // Get ALL pets (including adopted and hidden for admin view)
+                const petsResponse = await fetch('/api/pets?limit=10000', {
+                    credentials: 'include'
+                });
+                
+                const petsData = await petsResponse.json();
+                
+                if (petsData.ok) {
+                    allPets = petsData.pets;
+                    
+                    // Get adopted pets
+                    const adoptedResponse = await fetch('/api/admin/adopted-pets', {
+                        credentials: 'include'
+                    });
+                    
+                    if (adoptedResponse.ok) {
+                        const adoptedData = await adoptedResponse.json();
+                        if (adoptedData.ok) {
+                            adoptedPetIds = new Set(adoptedData.adopted_pets.map(p => p.pet_id));
+                        }
+                    }
+
+                    // Get hidden pets
+                    const hiddenResponse = await fetch('/api/admin/hidden-pets', {
+                        credentials: 'include'
+                    });
+                    
+                    if (hiddenResponse.ok) {
+                        const hiddenData = await hiddenResponse.json();
+                        if (hiddenData.ok) {
+                            hiddenPetIds = new Set(hiddenData.hidden_pet_ids);
+                        }
+                    }
+                    
+                    filterPets();
+                } else {
+                    document.getElementById('petsTable').innerHTML = 
+                        '<div class="empty-state"><p>Error loading pets</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading pets:', error);
+                document.getElementById('petsTable').innerHTML = 
+                    '<div class="empty-state"><p>Error loading pets</p></div>';
+            }
+        }
+
+        // Toggle show hidden pets
+        function toggleShowHidden() {
+            showHidden = !showHidden;
+            document.getElementById('showHiddenText').textContent = showHidden ? 'Hide Hidden Pets' : 'Show Hidden Pets';
+            filterPets();
+        }
+
+        // Filter pets
+        function filterPets() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const petTypeFilter = document.getElementById('petTypeFilter').value;
+            const sizeFilter = document.getElementById('sizeFilter').value;
+            
+            filteredPets = allPets.filter(pet => {
+                // Search filter
+                const matchesSearch = !searchQuery || 
+                    pet.name.toLowerCase().includes(searchQuery) ||
+                    pet.breed.toLowerCase().includes(searchQuery);
+                
+                // Pet type filter
+                const matchesType = !petTypeFilter || pet.type === petTypeFilter;
+                
+                // Size filter
+                const matchesSize = !sizeFilter || pet.size === sizeFilter;
+                
+                // Hidden filter
+                const isHidden = hiddenPetIds.has(pet.pet_id);
+                const matchesHiddenFilter = showHidden || !isHidden;
+                
+                return matchesSearch && matchesType && matchesSize && matchesHiddenFilter;
+            });
+            
+            displayPets();
+        }
+
+        // Display pets
+        function displayPets() {
+            const container = document.getElementById('petsTable');
+            
+            if (filteredPets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🐾</div>
+                        <div class="empty-state-title">No pets found</div>
+                        <div class="empty-state-text">Try adjusting your filters or search query.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Breed</th>
+                                <th>Age</th>
+                                <th>Size</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filteredPets.map(pet => {
+                                const isAdopted = adoptedPetIds.has(pet.pet_id);
+                                const isHidden = hiddenPetIds.has(pet.pet_id);
+                                let status = 'Available';
+                                let statusClass = 'approved';
+                                
+                                if (isAdopted) {
+                                    status = 'Adopted';
+                                    statusClass = 'pending';
+                                } else if (isHidden) {
+                                    status = 'Hidden';
+                                    statusClass = 'rejected';
+                                }
+                                
+                                return `
+                                <tr>
+                                    <td>#${pet.pet_id}</td>
+                                    <td><strong>${pet.name}</strong></td>
+                                    <td>${pet.type}</td>
+                                    <td>${pet.breed}</td>
+                                    <td>${pet.age_years}y ${pet.age_months}m</td>
+                                    <td>${pet.size}</td>
+                                    <td>
+                                        <span class="status-badge ${statusClass}">
+                                            ${status}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-action btn-view" onclick='viewPetDetails(${JSON.stringify(pet).replace(/'/g, "&apos;")})'>View</button>
+                                            ${!isAdopted && !isHidden ? `
+                                                <button class="btn-action btn-delete" onclick='hidePet(${JSON.stringify({id: pet.pet_id, name: pet.name}).replace(/'/g, "&apos;")})'>Hide</button>
+                                            ` : ''}
+                                            ${isHidden ? `
+                                                <button class="btn-action btn-approve" onclick='unhidePet(${pet.pet_id}, "${pet.name}")'>Unhide</button>
+                                            ` : ''}
+                                            ${pet.is_custom && !isAdopted ? `
+                                                <button class="btn-action btn-delete" onclick='deletePet(${JSON.stringify({id: pet.pet_id, name: pet.name}).replace(/'/g, "&apos;")})' style="background: #991b1b;">Delete</button>
+                                            ` : ''}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `}).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="padding: 1rem; text-align: center; color: var(--gray); font-size: 0.875rem;">
+                    Showing ${filteredPets.length} of ${allPets.length} pets
+                </div>
+            `;
+        }
+
+        // View pet details
+        function viewPetDetails(pet) {
+            const isAdopted = adoptedPetIds.has(pet.pet_id);
+            const isHidden = hiddenPetIds.has(pet.pet_id);
+            const modalBody = document.getElementById('modalBody');
+            
+            let statusBadge = 'Available';
+            let statusClass = 'approved';
+            if (isAdopted) {
+                statusBadge = 'Adopted';
+                statusClass = 'pending';
+            } else if (isHidden) {
+                statusBadge = 'Hidden';
+                statusClass = 'rejected';
+            }
+            
+            modalBody.innerHTML = `
+                <div class="detail-row">
+                    <div class="detail-label">Pet ID:</div>
+                    <div class="detail-value">#${pet.pet_id}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Name:</div>
+                    <div class="detail-value"><strong>${pet.name}</strong></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Type:</div>
+                    <div class="detail-value">${pet.type}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Breed:</div>
+                    <div class="detail-value">${pet.breed}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Age:</div>
+                    <div class="detail-value">${pet.age_years} years ${pet.age_months} months</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Size:</div>
+                    <div class="detail-value">${pet.size}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Color:</div>
+                    <div class="detail-value">${pet.color}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Gender:</div>
+                    <div class="detail-value">${pet.gender}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Vaccinated:</div>
+                    <div class="detail-value">${pet.vaccinated ? 'Yes ✅' : 'No ❌'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Health:</div>
+                    <div class="detail-value">${pet.health_condition || pet.health}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Kid Friendly:</div>
+                    <div class="detail-value">${pet.kid_friendly ? 'Yes ✅' : 'No ❌'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Energy Level:</div>
+                    <div class="detail-value">${pet.energy_level}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Weight:</div>
+                    <div class="detail-value">${pet.weight_kg} kg</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Fee:</div>
+                    <div class="detail-value">$${pet.fee || 'N/A'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Status:</div>
+                    <div class="detail-value">
+                        <span class="status-badge ${statusClass}">
+                            ${statusBadge}
+                        </span>
+                    </div>
+                </div>
+                ${pet.pet_characteristics ? `
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+                        <div class="detail-label" style="margin-bottom: 0.5rem;">Characteristics:</div>
+                        <div style="background: #f9fafb; padding: 1rem; border-radius: 0.5rem; color: var(--dark); line-height: 1.6;">
+                            ${pet.pet_characteristics}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // Hide pet
+        function hidePet(pet) {
+            petToHide = pet;
+            document.getElementById('hidePetName').textContent = pet.name;
+            document.getElementById('hideReason').value = '';
+            document.getElementById('hideModal').classList.add('active');
+        }
+
+        // Confirm hide
+        async function confirmHide() {
+            const reason = document.getElementById('hideReason').value;
+            
+            try {
+                const response = await fetch(`/api/admin/pets/${petToHide.id}/hide`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ reason: reason })
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(`Pet "${petToHide.name}" hidden successfully`, 'success');
+                    closeHideModal();
+                    loadStats();
+                    loadPets();
+                } else {
+                    showToast(data.message || 'Error hiding pet', 'error');
+                }
+            } catch (error) {
+                console.error('Error hiding pet:', error);
+                showToast('Error hiding pet', 'error');
+            }
+        }
+
+        // Unhide pet
+        async function unhidePet(petId, petName) {
+            if (!confirm(`Are you sure you want to unhide "${petName}"?`)) return;
+            
+            try {
+                const response = await fetch(`/api/admin/pets/${petId}/unhide`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(`Pet "${petName}" unhidden successfully`, 'success');
+                    loadStats();
+                    loadPets();
+                } else {
+                    showToast(data.message || 'Error unhiding pet', 'error');
+                }
+            } catch (error) {
+                console.error('Error unhiding pet:', error);
+                showToast('Error unhiding pet', 'error');
+            }
+        }
+
+        // Close modals
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        function closeHideModal() {
+            document.getElementById('hideModal').classList.remove('active');
+            petToHide = null;
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addPetForm').reset();
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+            petToDelete = null;
+        }
+
+        // Delete pet (permanent)
+        function deletePet(pet) {
+            petToDelete = pet;
+            document.getElementById('deletePetName').textContent = pet.name;
+            document.getElementById('deleteConfirmInput').value = '';
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        // Confirm delete
+        async function confirmDelete() {
+            const confirmInput = document.getElementById('deleteConfirmInput').value;
+            
+            if (confirmInput !== 'DELETE') {
+                showToast('Please type "DELETE" to confirm', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/pets/${petToDelete.id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(`Pet "${petToDelete.name}" deleted permanently`, 'success');
+                    closeDeleteModal();
+                    loadStats();
+                    loadPets();
+                } else {
+                    showToast(data.message || 'Error deleting pet', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting pet:', error);
+                showToast('Error deleting pet', 'error');
+            }
+        }
+
+        // Submit add pet form
+        async function submitAddPet() {
+            const form = document.getElementById('addPetForm');
+            
+            // Validate form
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            const petData = {
+                name: document.getElementById('petName').value.trim(),
+                type: document.getElementById('petType').value,
+                breed: document.getElementById('petBreed').value.trim(),
+                age_years: parseInt(document.getElementById('petAge').value),
+                size: document.getElementById('petSize').value,
+                color: document.getElementById('petColor').value.trim(),
+                gender: document.getElementById('petGender').value,
+                weight_kg: parseFloat(document.getElementById('petWeight').value),
+                vaccinated: document.getElementById('petVaccinated').value === 'true',
+                health_condition: document.getElementById('petHealth').value,
+                kid_friendly: document.getElementById('petKidFriendly').value === 'true',
+                energy_level: document.getElementById('petEnergy').value,
+                description: document.getElementById('petDescription').value.trim()
+            };
+            
+            try {
+                const response = await fetch('/api/admin/pets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(petData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(`Pet "${petData.name}" added successfully!`, 'success');
+                    closeAddModal();
+                    loadStats();
+                    loadPets();
+                } else {
+                    showToast(data.message || 'Error adding pet', 'error');
+                }
+            } catch (error) {
+                console.error('Error adding pet:', error);
+                showToast('Error adding pet', 'error');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.getElementById('hideModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHideModal();
+            }
+        });
+
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddModal();
+            }
+        });
+
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+
+        // Check auth on page load
+        window.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+</body>
+</html>

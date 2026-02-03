@@ -22,6 +22,7 @@ class User(UserMixin, db.Model):
     full_name = db.Column(db.String(120))
     phone = db.Column(db.String(20))
     address = db.Column(db.String(200))
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     
@@ -36,6 +37,20 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check if provided password matches hash"""
         return check_password_hash(self.password_hash, password)
+    
+    def to_dict(self):
+        """Convert user to dictionary"""
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'full_name': self.full_name,
+            'phone': self.phone,
+            'address': self.address,
+            'is_admin': self.is_admin,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'last_login': self.last_login.isoformat() if self.last_login else None
+        }
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -88,4 +103,106 @@ class Favorite(db.Model):
     
     def __repr__(self):
         return f'<Favorite {self.user_id} - {self.pet_id}>'
+
+
+class AdoptedPet(db.Model):
+    """Track adopted pets"""
+    __tablename__ = 'adopted_pets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    pet_id = db.Column(db.Integer, unique=True, nullable=False)
+    pet_name = db.Column(db.String(100))
+    pet_type = db.Column(db.String(50))
+    adopted_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    adoption_request_id = db.Column(db.Integer, db.ForeignKey('adoption_requests.id'), nullable=False)
+    adopted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    adopter = db.relationship('User', backref='adopted_pets', lazy=True)
+    adoption_request = db.relationship('AdoptionRequest', backref='adopted_pet', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'pet_id': self.pet_id,
+            'pet_name': self.pet_name,
+            'pet_type': self.pet_type,
+            'adopted_by_user_id': self.adopted_by_user_id,
+            'adopted_by': self.adopter.username,
+            'adopted_at': self.adopted_at.isoformat() if self.adopted_at else None
+        }
+    
+    def __repr__(self):
+        return f'<AdoptedPet {self.pet_id} - {self.pet_name}>'
+
+
+class HiddenPet(db.Model):
+    """Track pets that are hidden/deactivated by admin"""
+    __tablename__ = 'hidden_pets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    pet_id = db.Column(db.Integer, unique=True, nullable=False)
+    reason = db.Column(db.String(200))
+    hidden_at = db.Column(db.DateTime, default=datetime.utcnow)
+    hidden_by_admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    admin = db.relationship('User', backref='hidden_pets', lazy=True)
+    
+    def __repr__(self):
+        return f'<HiddenPet {self.pet_id}>'
+
+
+class CustomPet(db.Model):
+    """Custom pets added by admin (not from CSV)"""
+    __tablename__ = 'custom_pets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(50), nullable=False)
+    breed = db.Column(db.String(100), nullable=False)
+    age_years = db.Column(db.Integer, nullable=False)
+    age_months = db.Column(db.Integer, default=0)
+    size = db.Column(db.String(20), nullable=False)
+    color = db.Column(db.String(50), nullable=False)
+    gender = db.Column(db.String(10), nullable=False)
+    weight_kg = db.Column(db.Float, nullable=False)
+    vaccinated = db.Column(db.Boolean, default=False)
+    health_condition = db.Column(db.String(50), default='Good')
+    kid_friendly = db.Column(db.Boolean, default=True)
+    energy_level = db.Column(db.String(20), default='Moderate')
+    description = db.Column(db.Text)
+    pet_characteristics = db.Column(db.Text)
+    fee = db.Column(db.Float, default=100.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by_admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    admin = db.relationship('User', backref='custom_pets', lazy=True)
+    
+    def to_dict(self):
+        """Convert to dictionary matching the format from CSV pets"""
+        return {
+            'pet_id': f'custom_{self.id}',  # Prefix to distinguish from CSV pets
+            'id': f'custom_{self.id}',
+            'name': self.name,
+            'type': self.type,
+            'breed': self.breed,
+            'age_years': self.age_years,
+            'age_months': self.age_months,
+            'size': self.size,
+            'color': self.color,
+            'gender': self.gender,
+            'weight_kg': self.weight_kg,
+            'vaccinated': self.vaccinated,
+            'health': self.health_condition,
+            'health_condition': self.health_condition,
+            'kid_friendly': self.kid_friendly,
+            'energy_level': self.energy_level,
+            'pet_characteristics': self.description or '',
+            'description': self.description or '',
+            'fee': self.fee,
+            'is_custom': True
+        }
+    
+    def __repr__(self):
+        return f'<CustomPet {self.name}>'
 

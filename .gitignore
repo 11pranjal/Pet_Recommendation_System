@@ -3,7 +3,6 @@ instance/
 model/
 
 __pycache__/
-
 # SBERT dataset (too large for git)
 dataset/sbert_refined_data_with_breed_characteristics_gender_full_enhanced.csv
 

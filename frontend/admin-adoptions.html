@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Adoptions - PetMatch Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon">⚙️</span>
+                <span class="logo-text">PetMatch Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/admin-dashboard" class="nav-link">Dashboard</a>
+                <a href="/admin-adoptions.html" class="nav-link active">Adoptions</a>
+                <a href="/admin-users.html" class="nav-link">Users</a>
+                <a href="/admin-pets.html" class="nav-link">Pets</a>
+                <a href="/dashboard" class="nav-link">Customer View</a>
+                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <!-- Page Header -->
+        <div class="section-header">
+            <h1 class="section-title">Adoption Requests</h1>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Status:</label>
+                <select id="statusFilter" class="filter-select" onchange="filterAdoptions()">
+                    <option value="all">All</option>
+                    <option value="pending" selected>Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Pet Type:</label>
+                <select id="petTypeFilter" class="filter-select" onchange="filterAdoptions()">
+                    <option value="">All Types</option>
+                    <option value="Dog">Dog</option>
+                    <option value="Cat">Cat</option>
+                    <option value="Bird">Bird</option>
+                    <option value="Rabbit">Rabbit</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="filter-group" style="flex: 1;">
+                <label>Search:</label>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="filter-input" 
+                    placeholder="Search by user name, email, or pet name..."
+                    onkeyup="filterAdoptions()"
+                >
+            </div>
+        </div>
+
+        <!-- Adoptions Table -->
+        <div class="data-table" id="adoptionsTable">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading adoption requests...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Viewing Details -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Adoption Request Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let allAdoptions = [];
+        let filteredAdoptions = [];
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user/me', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.ok && data.user.is_admin) {
+                    currentUser = data.user;
+                    loadAdoptions();
+                } else {
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Load adoptions
+        async function loadAdoptions() {
+            try {
+                const statusFilter = document.getElementById('statusFilter').value;
+                const petTypeFilter = document.getElementById('petTypeFilter').value;
+                
+                let url = '/api/admin/adoptions?status=' + statusFilter;
+                if (petTypeFilter) {
+                    url += '&pet_type=' + petTypeFilter;
+                }
+                
+                const response = await fetch(url, {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    allAdoptions = data.requests;
+                    filteredAdoptions = [...allAdoptions];
+                    displayAdoptions();
+                } else {
+                    document.getElementById('adoptionsTable').innerHTML = 
+                        '<div class="empty-state"><p>Error loading adoption requests</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading adoptions:', error);
+                document.getElementById('adoptionsTable').innerHTML = 
+                    '<div class="empty-state"><p>Error loading adoption requests</p></div>';
+            }
+        }
+
+        // Filter adoptions
+        function filterAdoptions() {
+            loadAdoptions(); // Reload with new filters
+        }
+
+        // Display adoptions
+        function displayAdoptions() {
+            const container = document.getElementById('adoptionsTable');
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            
+            // Apply search filter
+            let displayedAdoptions = filteredAdoptions;
+            if (searchQuery) {
+                displayedAdoptions = filteredAdoptions.filter(req => 
+                    req.pet_name.toLowerCase().includes(searchQuery) ||
+                    req.user_name.toLowerCase().includes(searchQuery) ||
+                    req.user_email.toLowerCase().includes(searchQuery)
+                );
+            }
+            
+            if (displayedAdoptions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-title">No adoption requests found</div>
+                        <div class="empty-state-text">Try adjusting your filters or search query.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Pet Name</th>
+                                <th>Pet Type</th>
+                                <th>Date Submitted</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${displayedAdoptions.map(req => `
+                                <tr>
+                                    <td>#${req.id}</td>
+                                    <td>
+                                        <div style="font-weight: 600;">${req.user_name}</div>
+                                        <div style="font-size: 0.875rem; color: var(--gray);">${req.user_email}</div>
+                                    </td>
+                                    <td><strong>${req.pet_name}</strong></td>
+                                    <td>${req.pet_type}</td>
+                                    <td>${new Date(req.created_at).toLocaleDateString()}</td>
+                                    <td><span class="status-badge ${req.status}">${req.status}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-action btn-view" onclick="viewDetails(${req.id})">View</button>
+                                            ${req.status === 'pending' ? `
+                                                <button class="btn-action btn-approve" onclick="updateAdoption(${req.id}, 'approved')">Approve</button>
+                                                <button class="btn-action btn-reject" onclick="updateAdoption(${req.id}, 'rejected')">Reject</button>
+                                            ` : ''}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="padding: 1rem; text-align: center; color: var(--gray); font-size: 0.875rem;">
+                    Showing ${displayedAdoptions.length} of ${allAdoptions.length} requests
+                </div>
+            `;
+        }
+
+        // View details
+        function viewDetails(requestId) {
+            const request = allAdoptions.find(req => req.id === requestId);
+            if (!request) return;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="detail-row">
+                    <div class="detail-label">Request ID:</div>
+                    <div class="detail-value">#${request.id}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Status:</div>
+                    <div class="detail-value"><span class="status-badge ${request.status}">${request.status}</span></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">User Name:</div>
+                    <div class="detail-value">${request.user_name}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">User Email:</div>
+                    <div class="detail-value">${request.user_email}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Pet Name:</div>
+                    <div class="detail-value"><strong>${request.pet_name}</strong></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Pet Type:</div>
+                    <div class="detail-value">${request.pet_type}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Pet ID:</div>
+                    <div class="detail-value">#${request.pet_id}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Date Submitted:</div>
+                    <div class="detail-value">${new Date(request.created_at).toLocaleString()}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Last Updated:</div>
+                    <div class="detail-value">${new Date(request.updated_at).toLocaleString()}</div>
+                </div>
+                ${request.message ? `
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+                        <div class="detail-label" style="margin-bottom: 0.5rem;">User Message:</div>
+                        <div style="background: #f9fafb; padding: 1rem; border-radius: 0.5rem; color: var(--dark); line-height: 1.6;">
+                            "${request.message}"
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        // Update adoption status
+        async function updateAdoption(requestId, newStatus) {
+            const confirmMsg = newStatus === 'approved' 
+                ? 'Are you sure you want to approve this adoption request?' 
+                : 'Are you sure you want to reject this adoption request?';
+            
+            if (!confirm(confirmMsg)) return;
+            
+            try {
+                const response = await fetch(`/api/admin/adoptions/${requestId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(`Adoption request ${newStatus}!`, 'success');
+                    loadAdoptions(); // Refresh table
+                } else {
+                    showToast(data.message || 'Error updating request', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating adoption:', error);
+                showToast('Error updating request', 'error');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Check auth on page load
+        window.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+</body>
+</html>

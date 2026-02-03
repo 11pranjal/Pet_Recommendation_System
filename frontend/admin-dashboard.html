@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - PetMatch</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon">⚙️</span>
+                <span class="logo-text">PetMatch Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/admin-dashboard" class="nav-link active">Dashboard</a>
+                <a href="/admin-adoptions.html" class="nav-link">Adoptions</a>
+                <a href="/admin-users.html" class="nav-link">Users</a>
+                <a href="/admin-pets.html" class="nav-link">Pets</a>
+                <a href="/dashboard" class="nav-link">Customer View</a>
+                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <!-- Welcome Header -->
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Welcome, <span id="adminName">Admin</span>! 👋</h1>
+            <p style="color: var(--gray);">Here's what's happening with your pet adoption system today.</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading statistics...</p>
+            </div>
+        </div>
+
+        <!-- Recent Adoption Requests -->
+        <div class="section-header">
+            <h2 class="section-title">Recent Adoption Requests</h2>
+            <a href="/admin-adoptions.html" class="btn btn-primary">View All</a>
+        </div>
+
+        <div class="data-table" id="recentAdoptions">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading requests...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let stats = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user/me', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.ok && data.user.is_admin) {
+                    currentUser = data.user;
+                    const adminName = currentUser.full_name || currentUser.username;
+                    document.getElementById('adminName').textContent = adminName;
+                    
+                    // Load data
+                    loadStats();
+                    loadRecentAdoptions();
+                } else {
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    stats = data.stats;
+                    displayStats();
+                } else {
+                    document.getElementById('statsGrid').innerHTML = 
+                        '<div class="empty-state"><p>Error loading statistics</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.getElementById('statsGrid').innerHTML = 
+                    '<div class="empty-state"><p>Error loading statistics</p></div>';
+            }
+        }
+
+        // Display statistics
+        function displayStats() {
+            const statsGrid = document.getElementById('statsGrid');
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card warning">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">${stats.pending_adoptions}</div>
+                            <div class="stat-label">Pending Requests</div>
+                        </div>
+                        <div class="stat-icon">⏳</div>
+                    </div>
+                </div>
+
+                <div class="stat-card success">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">${stats.approved_adoptions}</div>
+                            <div class="stat-label">Approved</div>
+                        </div>
+                        <div class="stat-icon">✅</div>
+                    </div>
+                </div>
+
+                <div class="stat-card info">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">${stats.total_users}</div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+                        <div class="stat-icon">👥</div>
+                    </div>
+                </div>
+
+                <div class="stat-card primary">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">${stats.total_pets}</div>
+                            <div class="stat-label">Total Pets</div>
+                        </div>
+                        <div class="stat-icon">🐾</div>
+                    </div>
+                </div>
+
+                <div class="stat-card danger">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">${stats.rejected_adoptions}</div>
+                            <div class="stat-label">Rejected</div>
+                        </div>
+                        <div class="stat-icon">❌</div>
+                    </div>
+                </div>
+
+                <div class="stat-card info">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">${stats.total_adoptions}</div>
+                            <div class="stat-label">Total Requests</div>
+                        </div>
+                        <div class="stat-icon">📝</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load recent adoption requests
+        async function loadRecentAdoptions() {
+            try {
+                const response = await fetch('/api/admin/adoptions?status=pending', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    displayRecentAdoptions(data.requests.slice(0, 5)); // Show only 5 most recent
+                } else {
+                    document.getElementById('recentAdoptions').innerHTML = 
+                        '<div class="empty-state"><p>Error loading requests</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading adoptions:', error);
+                document.getElementById('recentAdoptions').innerHTML = 
+                    '<div class="empty-state"><p>Error loading requests</p></div>';
+            }
+        }
+
+        // Display recent adoptions
+        function displayRecentAdoptions(requests) {
+            const container = document.getElementById('recentAdoptions');
+            
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎉</div>
+                        <div class="empty-state-title">All caught up!</div>
+                        <div class="empty-state-text">No pending adoption requests at the moment.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Pet Name</th>
+                                <th>Pet Type</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${requests.map(req => `
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 600;">${req.user_name}</div>
+                                        <div style="font-size: 0.875rem; color: var(--gray);">${req.user_email}</div>
+                                    </td>
+                                    <td><strong>${req.pet_name}</strong></td>
+                                    <td>${req.pet_type}</td>
+                                    <td>${new Date(req.created_at).toLocaleDateString()}</td>
+                                    <td><span class="status-badge ${req.status}">${req.status}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-action btn-approve" onclick="updateAdoption(${req.id}, 'approved')">Approve</button>
+                                            <button class="btn-action btn-reject" onclick="updateAdoption(${req.id}, 'rejected')">Reject</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Update adoption status
+        async function updateAdoption(requestId, newStatus) {
+            const confirmMsg = newStatus === 'approved' 
+                ? 'Are you sure you want to approve this adoption request?' 
+                : 'Are you sure you want to reject this adoption request?';
+            
+            if (!confirm(confirmMsg)) return;
+            
+            try {
+                const response = await fetch(`/api/admin/adoptions/${requestId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(`Adoption request ${newStatus}!`, 'success');
+                    loadStats(); // Refresh stats
+                    loadRecentAdoptions(); // Refresh table
+                } else {
+                    showToast(data.message || 'Error updating request', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating adoption:', error);
+                showToast('Error updating request', 'error');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Check auth on page load
+        window.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+</body>
+</html>

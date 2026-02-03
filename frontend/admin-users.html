@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - PetMatch Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon">⚙️</span>
+                <span class="logo-text">PetMatch Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/admin-dashboard" class="nav-link">Dashboard</a>
+                <a href="/admin-adoptions.html" class="nav-link">Adoptions</a>
+                <a href="/admin-users.html" class="nav-link active">Users</a>
+                <a href="/admin-pets.html" class="nav-link">Pets</a>
+                <a href="/dashboard" class="nav-link">Customer View</a>
+                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <!-- Page Header -->
+        <div class="section-header">
+            <h1 class="section-title">User Management</h1>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group" style="flex: 1;">
+                <label>Search:</label>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="filter-input" 
+                    placeholder="Search by username, name, or email..."
+                    onkeyup="filterUsers()"
+                >
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="data-table" id="usersTable">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading users...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Viewing User Details -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">User Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Confirm Delete</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem;">Are you sure you want to delete user <strong id="deleteUsername"></strong>?</p>
+                <p style="color: var(--admin-danger); font-weight: 600;">⚠️ This action cannot be undone!</p>
+                <p style="color: var(--gray); font-size: 0.875rem; margin-top: 1rem;">This will also delete all their adoption requests and favorites.</p>
+                <div style="margin-top: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type the username to confirm:</label>
+                    <input 
+                        type="text" 
+                        id="deleteConfirmInput" 
+                        class="filter-input" 
+                        placeholder="Enter username"
+                        style="width: 100%;"
+                    >
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn-action btn-delete" onclick="confirmDelete()">Delete User</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let allUsers = [];
+        let filteredUsers = [];
+        let userToDelete = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user/me', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.ok && data.user.is_admin) {
+                    currentUser = data.user;
+                    loadUsers();
+                } else {
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    allUsers = data.users;
+                    filteredUsers = [...allUsers];
+                    displayUsers();
+                } else {
+                    document.getElementById('usersTable').innerHTML = 
+                        '<div class="empty-state"><p>Error loading users</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTable').innerHTML = 
+                    '<div class="empty-state"><p>Error loading users</p></div>';
+            }
+        }
+
+        // Filter users
+        function filterUsers() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchQuery) {
+                filteredUsers = [...allUsers];
+            } else {
+                filteredUsers = allUsers.filter(user => 
+                    user.username.toLowerCase().includes(searchQuery) ||
+                    (user.full_name || '').toLowerCase().includes(searchQuery) ||
+                    user.email.toLowerCase().includes(searchQuery)
+                );
+            }
+            
+            displayUsers();
+        }
+
+        // Display users
+        function displayUsers() {
+            const container = document.getElementById('usersTable');
+            
+            if (filteredUsers.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-title">No users found</div>
+                        <div class="empty-state-text">Try adjusting your search query.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filteredUsers.map(user => `
+                                <tr>
+                                    <td>#${user.id}</td>
+                                    <td><strong>${user.username}</strong></td>
+                                    <td>${user.full_name || '-'}</td>
+                                    <td>${user.email}</td>
+                                    <td>
+                                        <span class="status-badge ${user.is_admin ? 'admin' : 'user'}">
+                                            ${user.is_admin ? 'Admin' : 'User'}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-action btn-view" onclick="viewUserDetails(${user.id})">View</button>
+                                            ${user.id !== currentUser.id ? `
+                                                <button class="btn-action btn-admin" onclick="toggleAdmin(${user.id}, ${user.is_admin})">
+                                                    ${user.is_admin ? 'Remove Admin' : 'Make Admin'}
+                                                </button>
+                                                <button class="btn-action btn-delete" onclick="deleteUser(${user.id}, '${user.username}')">Delete</button>
+                                            ` : '<span style="color: var(--gray); font-size: 0.875rem;">(You)</span>'}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="padding: 1rem; text-align: center; color: var(--gray); font-size: 0.875rem;">
+                    Showing ${filteredUsers.length} of ${allUsers.length} users
+                </div>
+            `;
+        }
+
+        // View user details
+        async function viewUserDetails(userId) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    const user = data.user;
+                    const modalBody = document.getElementById('modalBody');
+                    
+                    modalBody.innerHTML = `
+                        <div class="detail-row">
+                            <div class="detail-label">User ID:</div>
+                            <div class="detail-value">#${user.id}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Username:</div>
+                            <div class="detail-value"><strong>${user.username}</strong></div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Full Name:</div>
+                            <div class="detail-value">${user.full_name || '-'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Email:</div>
+                            <div class="detail-value">${user.email}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Phone:</div>
+                            <div class="detail-value">${user.phone || '-'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Address:</div>
+                            <div class="detail-value">${user.address || '-'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Role:</div>
+                            <div class="detail-value">
+                                <span class="status-badge ${user.is_admin ? 'admin' : 'user'}">
+                                    ${user.is_admin ? 'Admin' : 'User'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Joined:</div>
+                            <div class="detail-value">${new Date(user.created_at).toLocaleString()}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Last Login:</div>
+                            <div class="detail-value">${user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Favorites:</div>
+                            <div class="detail-value">${user.favorites_count}</div>
+                        </div>
+                        
+                        ${user.adoption_requests && user.adoption_requests.length > 0 ? `
+                            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+                                <h3 style="margin-bottom: 1rem;">Adoption Requests (${user.adoption_requests.length})</h3>
+                                ${user.adoption_requests.map(req => `
+                                    <div style="background: #f9fafb; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <strong>${req.pet_name}</strong> (${req.pet_type})
+                                            </div>
+                                            <span class="status-badge ${req.status}">${req.status}</span>
+                                        </div>
+                                        <div style="font-size: 0.875rem; color: var(--gray); margin-top: 0.5rem;">
+                                            ${new Date(req.created_at).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    document.getElementById('detailModal').classList.add('active');
+                } else {
+                    showToast('Error loading user details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading user details:', error);
+                showToast('Error loading user details', 'error');
+            }
+        }
+
+        // Toggle admin status
+        async function toggleAdmin(userId, isCurrentlyAdmin) {
+            const action = isCurrentlyAdmin ? 'remove admin privileges from' : 'grant admin privileges to';
+            
+            if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/toggle-admin`, {
+                    method: 'PUT',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(data.message, 'success');
+                    loadUsers(); // Refresh table
+                } else {
+                    showToast(data.message || 'Error updating user', 'error');
+                }
+            } catch (error) {
+                console.error('Error toggling admin:', error);
+                showToast('Error updating user', 'error');
+            }
+        }
+
+        // Delete user
+        function deleteUser(userId, username) {
+            userToDelete = { id: userId, username: username };
+            document.getElementById('deleteUsername').textContent = username;
+            document.getElementById('deleteConfirmInput').value = '';
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        // Confirm delete
+        async function confirmDelete() {
+            const confirmInput = document.getElementById('deleteConfirmInput').value;
+            
+            if (confirmInput !== userToDelete.username) {
+                showToast('Username does not match', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showToast(data.message, 'success');
+                    closeDeleteModal();
+                    loadUsers(); // Refresh table
+                } else {
+                    showToast(data.message || 'Error deleting user', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showToast('Error deleting user', 'error');
+            }
+        }
+
+        // Close modals
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+            userToDelete = null;
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+
+        // Check auth on page load
+        window.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+</body>
+</html>

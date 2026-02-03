@@ -170,9 +170,13 @@
                     messageDiv.textContent = '✅ ' + data.message;
                     messageDiv.className = 'message message-success';
                     
-                    // Redirect to dashboard after 1 second
+                    // Check if user is admin and redirect accordingly
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        if (data.user && data.user.is_admin) {
+                            window.location.href = '/admin-choice';
+                        } else {
+                            window.location.href = '/dashboard';
+                        }
                     }, 1000);
                 } else {
                     messageDiv.textContent = '❌ ' + data.message;

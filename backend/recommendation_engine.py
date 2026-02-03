@@ -419,10 +419,21 @@ class PetRecommendationEngine:
         return [self._clean_pet(p) for p in pets]
     
     def _clean_pet(self, pet):
-        """Remove internal fields from pet object"""
+        """Remove internal fields from pet object and normalize format"""
         pet_copy = pet.copy()
         if 'raw_features' in pet_copy:
             del pet_copy['raw_features']
+        
+        # Normalize pet_id field - add it if only 'id' exists
+        if 'id' in pet_copy and 'pet_id' not in pet_copy:
+            pet_copy['pet_id'] = pet_copy['id']
+        
+        # Calculate age_years from age_months if not present
+        if 'age_months' in pet_copy and 'age_years' not in pet_copy:
+            total_months = pet_copy['age_months']
+            pet_copy['age_years'] = total_months // 12
+            pet_copy['age_months'] = total_months % 12
+        
         return pet_copy
     
     def _quiz_to_features(self, answers):
