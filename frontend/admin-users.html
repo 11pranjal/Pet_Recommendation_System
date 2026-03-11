@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <meta name="darkreader-lock">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users - PetMatch Admin</title>
+    <title>Manage Users - Adoptly Admin</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin-styles.css">
 </head>
@@ -11,17 +13,17 @@
     <!-- Admin Navigation -->
     <nav class="admin-nav">
         <div class="nav-container">
-            <div class="nav-logo">
-                <span class="logo-icon">⚙️</span>
-                <span class="logo-text">PetMatch Admin</span>
-            </div>
+            <a href="/admin-dashboard" class="nav-logo">
+                <div class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg></div>
+                <span class="logo-text">Adoptly Admin</span>
+            </a>
             <div class="nav-menu">
                 <a href="/admin-dashboard" class="nav-link">Dashboard</a>
                 <a href="/admin-adoptions.html" class="nav-link">Adoptions</a>
                 <a href="/admin-users.html" class="nav-link active">Users</a>
                 <a href="/admin-pets.html" class="nav-link">Pets</a>
                 <a href="/dashboard" class="nav-link">Customer View</a>
-                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+                <a href="#" onclick="logout()" class="nav-link" style="color:var(--danger);">Sign Out</a>
             </div>
         </div>
     </nav>
@@ -81,7 +83,7 @@
             <div class="modal-body">
                 <p style="margin-bottom: 1rem;">Are you sure you want to delete user <strong id="deleteUsername"></strong>?</p>
                 <p style="color: var(--admin-danger); font-weight: 600;">⚠️ This action cannot be undone!</p>
-                <p style="color: var(--gray); font-size: 0.875rem; margin-top: 1rem;">This will also delete all their adoption requests and favorites.</p>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 1rem;">This will also delete all their adoption requests and favorites.</p>
                 <div style="margin-top: 1.5rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type the username to confirm:</label>
                     <input 
@@ -179,7 +181,7 @@
             if (filteredUsers.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-icon"></div>
                         <div class="empty-state-title">No users found</div>
                         <div class="empty-state-text">Try adjusting your search query.</div>
                     </div>
@@ -222,7 +224,7 @@
                                                     ${user.is_admin ? 'Remove Admin' : 'Make Admin'}
                                                 </button>
                                                 <button class="btn-action btn-delete" onclick="deleteUser(${user.id}, '${user.username}')">Delete</button>
-                                            ` : '<span style="color: var(--gray); font-size: 0.875rem;">(You)</span>'}
+                                            ` : '<span style="color: var(--text-muted); font-size: 0.875rem;">(You)</span>'}
                                         </div>
                                     </td>
                                 </tr>
@@ -230,7 +232,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div style="padding: 1rem; text-align: center; color: var(--gray); font-size: 0.875rem;">
+                <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.875rem;">
                     Showing ${filteredUsers.length} of ${allUsers.length} users
                 </div>
             `;
@@ -306,7 +308,7 @@
                                             </div>
                                             <span class="status-badge ${req.status}">${req.status}</span>
                                         </div>
-                                        <div style="font-size: 0.875rem; color: var(--gray); margin-top: 0.5rem;">
+                                        <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem;">
                                             ${new Date(req.created_at).toLocaleDateString()}
                                         </div>
                                     </div>
@@ -404,7 +406,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             
-            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            const icon = type === 'success' ? '' : type === 'error' ? '' : 'ℹ️';
             
             toast.innerHTML = `
                 <div class="toast-icon">${icon}</div>
@@ -425,10 +427,10 @@
                     method: 'POST',
                     credentials: 'include'
                 });
-                window.location.href = '/login';
+                window.location.href = '/';
             } catch (error) {
                 console.error('Logout failed:', error);
-                window.location.href = '/login';
+                window.location.href = '/';
             }
         }
 
