@@ -2,412 +2,308 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <meta name="darkreader-lock">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - PetMatch</title>
+    <title>Create Account — Adoptly</title>
     <link rel="stylesheet" href="auth-styles.css">
 </head>
 <body>
-    <div class="auth-container">
-        <!-- Left Side - Branding -->
-        <div class="auth-left">
-            <div class="brand-section">
-                <div class="brand-logo">
-                    <span class="logo-icon">🐾</span>
-                    <h1>PetMatch</h1>
+    <!-- Background -->
+    <div class="auth-bg"></div>
+
+    <!-- Floating paw prints -->
+    <div class="floating-paws">
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+    </div>
+
+    <!-- Single Centered Card -->
+    <div class="auth-page">
+        <div class="auth-card auth-card-wide" id="authCard">
+
+            <!-- Brand -->
+            <div class="auth-brand">
+                <div class="auth-brand-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="7" cy="5" r="2.2"/>
+                        <circle cx="17" cy="5" r="2.2"/>
+                        <circle cx="3.5" cy="11.5" r="2"/>
+                        <circle cx="20.5" cy="11.5" r="2"/>
+                        <ellipse cx="12" cy="17" rx="5.5" ry="4"/>
+                    </svg>
                 </div>
-                <p class="brand-tagline">Start Your Journey Today!</p>
-                
-                <div class="features-list">
-                    <div class="feature-item">
-                        <span class="feature-icon">📝</span>
-                        <div>
-                            <h3>Take Our Quiz</h3>
-                            <p>Answer questions about your lifestyle</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🔍</span>
-                        <div>
-                            <h3>Smart Search</h3>
-                            <p>Describe your ideal pet in natural language</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🏡</span>
-                        <div>
-                            <h3>Adopt with Ease</h3>
-                            <p>Submit requests directly through our platform</p>
-                        </div>
-                    </div>
-                </div>
+                <h1>Adoptly</h1>
+                <p>Find your perfect companion</p>
             </div>
-        </div>
 
-        <!-- Right Side - Register Form -->
-        <div class="auth-right">
-            <div class="auth-form-container">
-                <div class="auth-header">
-                    <h2>Create Account</h2>
-                    <p>Join PetMatch and find your perfect companion</p>
+            <!-- Header -->
+            <div class="auth-header">
+                <h2>Create Account</h2>
+                <p>Join Adoptly and start your pet search</p>
+            </div>
+
+            <!-- Form -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="full_name">
+                            <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                            Full Name
+                        </label>
+                        <input type="text" id="full_name" name="full_name" placeholder="John Doe" autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="username">
+                            <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></span>
+                            Username *
+                        </label>
+                        <input type="text" id="username" name="username" placeholder="johndoe" required minlength="3" autocomplete="username">
+                    </div>
                 </div>
 
-                <form id="registerForm" class="auth-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="full_name">
-                                <span class="label-icon">✨</span>
-                                Full Name
-                            </label>
-                            <input 
-                                type="text" 
-                                id="full_name" 
-                                name="full_name"
-                                placeholder="John Doe"
-                                autocomplete="name"
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="username">
-                                <span class="label-icon">👤</span>
-                                Username *
-                            </label>
-                            <input 
-                                type="text" 
-                                id="username" 
-                                name="username"
-                                placeholder="johndoe"
-                                required
-                                minlength="3"
-                                autocomplete="username"
-                            >
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">
-                            <span class="label-icon">📧</span>
-                            Email Address *
-                        </label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email"
-                            placeholder="john@example.com"
-                            required
-                            autocomplete="email"
-                        >
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="phone">
-                                <span class="label-icon">📱</span>
-                                Phone Number
-                            </label>
-                            <input 
-                                type="tel" 
-                                id="phone" 
-                                name="phone"
-                                placeholder="+1 (555) 123-4567"
-                                autocomplete="tel"
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="address">
-                                <span class="label-icon">🏠</span>
-                                City
-                            </label>
-                            <input 
-                                type="text" 
-                                id="address" 
-                                name="address"
-                                placeholder="New York"
-                                autocomplete="address-level2"
-                            >
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">
-                            <span class="label-icon">🔒</span>
-                            Password *
-                        </label>
-                        <div class="password-input-wrapper">
-                            <input 
-                                type="password" 
-                                id="password" 
-                                name="password"
-                                placeholder="Create a strong password"
-                                required
-                                autocomplete="new-password"
-                                oninput="checkPasswordStrength()"
-                            >
-                            <button type="button" class="toggle-password" onclick="togglePassword('password')">
-                                <span class="eye-icon" id="password-eye">👁️</span>
-                            </button>
-                        </div>
-                        
-                        <!-- Password Strength Indicator -->
-                        <div class="password-strength">
-                            <div class="strength-bar">
-                                <div id="strengthBar" class="strength-fill"></div>
-                            </div>
-                            <span id="strengthText" class="strength-text"></span>
-                        </div>
-
-                        <!-- Password Criteria -->
-                        <div class="password-criteria">
-                            <h4>Password must contain:</h4>
-                            <div class="criteria-list">
-                                <div class="criteria-item" id="criteria-length">
-                                    <span class="criteria-icon">⭕</span>
-                                    At least 8 characters
-                                </div>
-                                <div class="criteria-item" id="criteria-uppercase">
-                                    <span class="criteria-icon">⭕</span>
-                                    One uppercase letter (A-Z)
-                                </div>
-                                <div class="criteria-item" id="criteria-lowercase">
-                                    <span class="criteria-icon">⭕</span>
-                                    One lowercase letter (a-z)
-                                </div>
-                                <div class="criteria-item" id="criteria-number">
-                                    <span class="criteria-icon">⭕</span>
-                                    One number (0-9)
-                                </div>
-                                <div class="criteria-item" id="criteria-special">
-                                    <span class="criteria-icon">⭕</span>
-                                    One special character (@$!%*?&#)
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="confirm_password">
-                            <span class="label-icon">🔒</span>
-                            Confirm Password *
-                        </label>
-                        <div class="password-input-wrapper">
-                            <input 
-                                type="password" 
-                                id="confirm_password" 
-                                name="confirm_password"
-                                placeholder="Re-enter your password"
-                                required
-                                autocomplete="new-password"
-                                oninput="checkPasswordMatch()"
-                            >
-                            <button type="button" class="toggle-password" onclick="togglePassword('confirm_password')">
-                                <span class="eye-icon" id="confirm_password-eye">👁️</span>
-                            </button>
-                        </div>
-                        <div id="passwordMatch" class="password-match"></div>
-                    </div>
-
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="terms" id="terms" required>
-                        <span>I agree to the <a href="#" class="link-primary">Terms & Conditions</a></span>
+                <div class="form-group">
+                    <label for="email">
+                        <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+                        Email Address *
                     </label>
-
-                    <button type="submit" class="btn btn-primary btn-block">
-                        <span id="registerBtnText">Create Account</span>
-                        <span id="registerSpinner" class="spinner" style="display: none;"></span>
-                    </button>
-
-                    <div id="registerMessage" class="message"></div>
-                </form>
-
-                <div class="auth-footer">
-                    <p>Already have an account? <a href="login.html" class="link-primary">Sign In</a></p>
+                    <input type="email" id="email" name="email" placeholder="john@example.com" required autocomplete="email">
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">
+                            <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+                            Phone
+                        </label>
+                        <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567" autocomplete="tel">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">
+                            <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                            City
+                        </label>
+                        <input type="text" id="address" name="address" placeholder="New York" autocomplete="address-level2">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                        Password *
+                    </label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Create a strong password" required autocomplete="new-password" oninput="checkPasswordStrength()">
+                        <button type="button" class="toggle-password" onclick="togglePassword('password')" aria-label="Toggle password visibility">
+                            <svg id="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="password-strength">
+                        <div class="strength-bar">
+                            <div id="strengthBar" class="strength-fill"></div>
+                        </div>
+                        <span id="strengthText" class="strength-text"></span>
+                    </div>
+
+                    <div class="password-criteria">
+                        <h4>Password must contain:</h4>
+                        <div class="criteria-list">
+                            <div class="criteria-item" id="criteria-length"><span class="criteria-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span> At least 8 characters</div>
+                            <div class="criteria-item" id="criteria-uppercase"><span class="criteria-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span> One uppercase letter (A-Z)</div>
+                            <div class="criteria-item" id="criteria-lowercase"><span class="criteria-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span> One lowercase letter (a-z)</div>
+                            <div class="criteria-item" id="criteria-number"><span class="criteria-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span> One number (0-9)</div>
+                            <div class="criteria-item" id="criteria-special"><span class="criteria-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span> One special character (@$!%*?&#)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">
+                        <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Confirm Password *
+                    </label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" required autocomplete="new-password" oninput="checkPasswordMatch()">
+                        <button type="button" class="toggle-password" onclick="togglePassword('confirm_password')" aria-label="Toggle password visibility">
+                            <svg id="confirm_password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div id="passwordMatch" class="password-match"></div>
+                </div>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" name="terms" id="terms" required>
+                    <span>I agree to the <a href="#" class="link-primary">Terms &amp; Conditions</a></span>
+                </label>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span id="registerBtnText">Create Account</span>
+                    <svg id="registerArrow" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    <span id="registerSpinner" class="spinner" style="display: none;"></span>
+                </button>
+
+                <div id="registerMessage" class="message"></div>
+            </form>
+
+            <!-- Footer -->
+            <div class="auth-footer">
+                <p>Already have an account? <a href="login.html" class="link-primary">Sign In</a></p>
             </div>
         </div>
     </div>
 
     <script>
-        // Toggle password visibility
         function togglePassword(fieldId) {
             const field = document.getElementById(fieldId);
-            const eyeIcon = document.getElementById(fieldId + '-eye');
-            
+            const eyeSvg = document.getElementById(fieldId + '-eye');
             if (field.type === 'password') {
                 field.type = 'text';
-                eyeIcon.textContent = '👁️‍🗨️';
+                eyeSvg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
             } else {
                 field.type = 'password';
-                eyeIcon.textContent = '👁️';
+                eyeSvg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
             }
         }
 
-        // Check password strength and criteria
         function checkPasswordStrength() {
             const password = document.getElementById('password').value;
             const strengthBar = document.getElementById('strengthBar');
             const strengthText = document.getElementById('strengthText');
-            
             let strength = 0;
-            let strengthLabel = '';
-            
-            // Check criteria
+
             const hasLength = password.length >= 8;
             const hasUppercase = /[A-Z]/.test(password);
             const hasLowercase = /[a-z]/.test(password);
             const hasNumber = /\d/.test(password);
             const hasSpecial = /[@$!%*?&#]/.test(password);
-            
-            // Update criteria UI
+
             updateCriteria('criteria-length', hasLength);
             updateCriteria('criteria-uppercase', hasUppercase);
             updateCriteria('criteria-lowercase', hasLowercase);
             updateCriteria('criteria-number', hasNumber);
             updateCriteria('criteria-special', hasSpecial);
-            
-            // Calculate strength
+
             if (hasLength) strength++;
             if (hasUppercase) strength++;
             if (hasLowercase) strength++;
             if (hasNumber) strength++;
             if (hasSpecial) strength++;
-            
-            // Update strength bar
-            const percentage = (strength / 5) * 100;
-            strengthBar.style.width = percentage + '%';
-            
-            if (strength === 0) {
-                strengthBar.className = 'strength-fill';
-                strengthText.textContent = '';
-            } else if (strength <= 2) {
-                strengthBar.className = 'strength-fill strength-weak';
-                strengthText.textContent = 'Weak';
-            } else if (strength <= 4) {
-                strengthBar.className = 'strength-fill strength-medium';
-                strengthText.textContent = 'Medium';
-            } else {
-                strengthBar.className = 'strength-fill strength-strong';
-                strengthText.textContent = 'Strong';
-            }
-            
-            // Also check password match if confirm field has value
-            if (document.getElementById('confirm_password').value) {
-                checkPasswordMatch();
-            }
+
+            strengthBar.style.width = (strength / 5) * 100 + '%';
+
+            if (strength === 0) { strengthBar.className = 'strength-fill'; strengthText.textContent = ''; }
+            else if (strength <= 2) { strengthBar.className = 'strength-fill strength-weak'; strengthText.textContent = 'Weak'; strengthText.style.color = '#ef4444'; }
+            else if (strength <= 4) { strengthBar.className = 'strength-fill strength-medium'; strengthText.textContent = 'Medium'; strengthText.style.color = '#f59e0b'; }
+            else { strengthBar.className = 'strength-fill strength-strong'; strengthText.textContent = 'Strong'; strengthText.style.color = '#22c55e'; }
+
+            if (document.getElementById('confirm_password').value) checkPasswordMatch();
         }
 
-        // Update individual criteria
         function updateCriteria(id, met) {
-            const criteriaItem = document.getElementById(id);
-            const icon = criteriaItem.querySelector('.criteria-icon');
-            
+            const item = document.getElementById(id);
+            const icon = item.querySelector('.criteria-icon');
             if (met) {
-                criteriaItem.classList.add('criteria-met');
-                icon.textContent = '✅';
+                item.classList.add('criteria-met');
+                icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
             } else {
-                criteriaItem.classList.remove('criteria-met');
-                icon.textContent = '⭕';
+                item.classList.remove('criteria-met');
+                icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>';
             }
         }
 
-        // Check if passwords match
         function checkPasswordMatch() {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm_password').value;
             const matchDiv = document.getElementById('passwordMatch');
-            
-            if (confirmPassword.length === 0) {
-                matchDiv.textContent = '';
-                return;
-            }
-            
+            if (!confirmPassword.length) { matchDiv.textContent = ''; return; }
             if (password === confirmPassword) {
-                matchDiv.textContent = '✅ Passwords match';
+                matchDiv.textContent = 'Passwords match';
                 matchDiv.className = 'password-match match-success';
             } else {
-                matchDiv.textContent = '❌ Passwords do not match';
+                matchDiv.textContent = 'Passwords do not match';
                 matchDiv.className = 'password-match match-error';
             }
         }
 
-        // Handle registration form submission
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const registerBtn = document.querySelector('button[type="submit"]');
-            const registerBtnText = document.getElementById('registerBtnText');
-            const registerSpinner = document.getElementById('registerSpinner');
-            const messageDiv = document.getElementById('registerMessage');
-            
+            const btn = document.querySelector('button[type="submit"]');
+            const btnText = document.getElementById('registerBtnText');
+            const btnArrow = document.getElementById('registerArrow');
+            const spinner = document.getElementById('registerSpinner');
+            const msg = document.getElementById('registerMessage');
             const formData = new FormData(e.target);
-            const password = formData.get('password');
-            const confirmPassword = formData.get('confirm_password');
-            
-            // Client-side validation
-            if (password !== confirmPassword) {
-                messageDiv.textContent = '❌ Passwords do not match';
-                messageDiv.className = 'message message-error';
+
+            if (formData.get('password') !== formData.get('confirm_password')) {
+                msg.textContent = 'Passwords do not match';
+                msg.className = 'message message-error';
                 return;
             }
-            
-            // Show loading
-            registerBtn.disabled = true;
-            registerBtnText.style.display = 'none';
-            registerSpinner.style.display = 'inline-block';
-            messageDiv.textContent = '';
-            messageDiv.className = 'message';
-            
-            const registerData = {
-                username: formData.get('username').trim(),
-                email: formData.get('email').trim(),
-                password: password,
-                full_name: formData.get('full_name').trim(),
-                phone: formData.get('phone').trim(),
-                address: formData.get('address').trim()
-            };
-            
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnArrow.style.display = 'none';
+            spinner.style.display = 'inline-block';
+            msg.textContent = '';
+            msg.className = 'message';
+
             try {
                 const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(registerData)
+                    body: JSON.stringify({
+                        username: formData.get('username').trim(),
+                        email: formData.get('email').trim(),
+                        password: formData.get('password'),
+                        full_name: formData.get('full_name').trim(),
+                        phone: formData.get('phone').trim(),
+                        address: formData.get('address').trim()
+                    })
                 });
-                
                 const data = await response.json();
-                
                 if (data.ok) {
-                    messageDiv.textContent = '✅ ' + data.message;
-                    messageDiv.className = 'message message-success';
-                    
-                    // Redirect to login after 2 seconds
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
+                    if (data.needs_verification) {
+                        // Show verification notice instead of redirect
+                        msg.innerHTML = '<strong>Account created!</strong><br>We sent a verification link to <strong>' +
+                            formData.get('email').trim() + '</strong>.<br>Please check your inbox (and spam folder) to verify your email before logging in.';
+                        msg.className = 'message message-success';
+                        // Disable form to prevent duplicate registration
+                        document.getElementById('registerForm').querySelectorAll('input, button').forEach(el => el.disabled = true);
+                        setTimeout(() => { window.location.href = '/login'; }, 5000);
+                    } else {
+                        msg.textContent = data.message;
+                        msg.className = 'message message-success';
+                        setTimeout(() => { window.location.href = '/login'; }, 2000);
+                    }
                 } else {
-                    messageDiv.textContent = '❌ ' + data.message;
-                    messageDiv.className = 'message message-error';
-                    
-                    // Re-enable button
-                    registerBtn.disabled = false;
-                    registerBtnText.style.display = 'inline';
-                    registerSpinner.style.display = 'none';
+                    msg.textContent = data.message;
+                    msg.className = 'message message-error';
+                    btn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnArrow.style.display = 'inline';
+                    spinner.style.display = 'none';
                 }
-            } catch (error) {
-                messageDiv.textContent = '❌ Registration failed. Please try again.';
-                messageDiv.className = 'message message-error';
-                
-                // Re-enable button
-                registerBtn.disabled = false;
-                registerBtnText.style.display = 'inline';
-                registerSpinner.style.display = 'none';
+            } catch {
+                msg.textContent = 'Registration failed. Please try again.';
+                msg.className = 'message message-error';
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                btnArrow.style.display = 'inline';
+                spinner.style.display = 'none';
             }
         });
 
-        // Add animation on load
-        window.addEventListener('DOMContentLoaded', function() {
-            document.querySelector('.auth-container').classList.add('loaded');
+        // Entrance
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => document.getElementById('authCard').classList.add('loaded'), 80);
         });
     </script>
 </body>
 </html>
-
