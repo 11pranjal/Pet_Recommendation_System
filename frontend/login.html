@@ -2,160 +2,138 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <meta name="darkreader-lock">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - PetMatch</title>
+    <title>Sign In — Adoptly</title>
     <link rel="stylesheet" href="auth-styles.css">
 </head>
 <body>
-    <div class="auth-container">
-        <!-- Left Side - Branding -->
-        <div class="auth-left">
-            <div class="brand-section">
-                <div class="brand-logo">
-                    <span class="logo-icon">🐾</span>
-                    <h1>PetMatch</h1>
+    <!-- Background -->
+    <div class="auth-bg"></div>
+
+    <!-- Floating paw prints -->
+    <div class="floating-paws">
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+        <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg>
+    </div>
+
+    <!-- Single Centered Card -->
+    <div class="auth-page">
+        <div class="auth-card" id="authCard">
+
+            <!-- Brand -->
+            <div class="auth-brand">
+                <div class="auth-brand-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="7" cy="5" r="2.2"/>
+                        <circle cx="17" cy="5" r="2.2"/>
+                        <circle cx="3.5" cy="11.5" r="2"/>
+                        <circle cx="20.5" cy="11.5" r="2"/>
+                        <ellipse cx="12" cy="17" rx="5.5" ry="4"/>
+                    </svg>
                 </div>
-                <p class="brand-tagline">Find Your Perfect Companion</p>
-                
-                <div class="features-list">
-                    <div class="feature-item">
-                        <span class="feature-icon">✨</span>
-                        <div>
-                            <h3>AI-Powered Matching</h3>
-                            <p>Smart algorithms find your ideal pet</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">💚</span>
-                        <div>
-                            <h3>1,985+ Pets</h3>
-                            <p>Dogs, cats, birds & rabbits</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🎯</span>
-                        <div>
-                            <h3>Perfect Matches</h3>
-                            <p>See confidence scores for each pet</p>
-                        </div>
-                    </div>
-                </div>
+                <h1>Adoptly</h1>
+                <p>Find your perfect companion</p>
             </div>
-        </div>
 
-        <!-- Right Side - Login Form -->
-        <div class="auth-right">
-            <div class="auth-form-container">
-                <div class="auth-header">
-                    <h2>Welcome Back!</h2>
-                    <p>Sign in to continue your pet search</p>
+            <!-- Header -->
+            <div class="auth-header">
+                <h2>Welcome Back</h2>
+                <p>Sign in to your account</p>
+            </div>
+
+            <!-- Form -->
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="identifier">
+                        <span class="label-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </span>
+                        Username or Email
+                    </label>
+                    <input type="text" id="identifier" name="identifier" placeholder="Enter your username or email" required autocomplete="username">
                 </div>
 
-                <form id="loginForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="identifier">
-                            <span class="label-icon">👤</span>
-                            Username or Email
-                        </label>
-                        <input 
-                            type="text" 
-                            id="identifier" 
-                            name="identifier"
-                            placeholder="Enter your username or email"
-                            required
-                            autocomplete="username"
-                        >
+                <div class="form-group">
+                    <label for="password">
+                        <span class="label-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </span>
+                        Password
+                    </label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                        <button type="button" class="toggle-password" onclick="togglePassword('password')" aria-label="Toggle password visibility">
+                            <svg id="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
                     </div>
-
-                    <div class="form-group">
-                        <label for="password">
-                            <span class="label-icon">🔒</span>
-                            Password
-                        </label>
-                        <div class="password-input-wrapper">
-                            <input 
-                                type="password" 
-                                id="password" 
-                                name="password"
-                                placeholder="Enter your password"
-                                required
-                                autocomplete="current-password"
-                            >
-                            <button type="button" class="toggle-password" onclick="togglePassword('password')">
-                                <span class="eye-icon" id="password-eye">👁️</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="form-options">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="remember" id="remember">
-                            <span>Remember me</span>
-                        </label>
-                        <a href="#" class="forgot-password">Forgot password?</a>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-block">
-                        <span id="loginBtnText">Sign In</span>
-                        <span id="loginSpinner" class="spinner" style="display: none;"></span>
-                    </button>
-
-                    <div id="loginMessage" class="message"></div>
-                </form>
-
-                <div class="auth-footer">
-                    <p>Don't have an account? <a href="register.html" class="link-primary">Sign Up</a></p>
                 </div>
 
-                <div class="divider">
-                    <span>or</span>
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="remember" id="remember">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="/forgot-password" class="forgot-password">Forgot password?</a>
                 </div>
 
-                <a href="#" class="btn btn-outline btn-block guest-btn" onclick="alert('Coming soon!')">
-                    <span>👤</span>
-                    Continue as Guest
-                </a>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span id="loginBtnText">Sign In</span>
+                    <svg id="loginArrow" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    <span id="loginSpinner" class="spinner" style="display: none;"></span>
+                </button>
+
+                <div id="loginMessage" class="message"></div>
+            </form>
+
+            <!-- Footer -->
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="register.html" class="link-primary">Create one</a></p>
             </div>
         </div>
     </div>
 
     <script>
-        // Toggle password visibility
         function togglePassword(fieldId) {
             const field = document.getElementById(fieldId);
-            const eyeIcon = document.getElementById(fieldId + '-eye');
-            
+            const eyeSvg = document.getElementById(fieldId + '-eye');
             if (field.type === 'password') {
                 field.type = 'text';
-                eyeIcon.textContent = '👁️‍🗨️';
+                eyeSvg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
             } else {
                 field.type = 'password';
-                eyeIcon.textContent = '👁️';
+                eyeSvg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
             }
         }
 
-        // Handle login form submission
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const loginBtn = document.querySelector('button[type="submit"]');
             const loginBtnText = document.getElementById('loginBtnText');
+            const loginArrow = document.getElementById('loginArrow');
             const loginSpinner = document.getElementById('loginSpinner');
             const messageDiv = document.getElementById('loginMessage');
-            
-            // Show loading
+
             loginBtn.disabled = true;
             loginBtnText.style.display = 'none';
+            loginArrow.style.display = 'none';
             loginSpinner.style.display = 'inline-block';
             messageDiv.textContent = '';
             messageDiv.className = 'message';
-            
+
             const formData = new FormData(e.target);
             const loginData = {
                 identifier: formData.get('identifier').trim(),
                 password: formData.get('password')
             };
-            
+
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
@@ -163,14 +141,10 @@
                     body: JSON.stringify(loginData),
                     credentials: 'include'
                 });
-                
                 const data = await response.json();
-                
                 if (data.ok) {
-                    messageDiv.textContent = '✅ ' + data.message;
+                    messageDiv.textContent = data.message;
                     messageDiv.className = 'message message-success';
-                    
-                    // Check if user is admin and redirect accordingly
                     setTimeout(() => {
                         if (data.user && data.user.is_admin) {
                             window.location.href = '/admin-choice';
@@ -178,31 +152,66 @@
                             window.location.href = '/dashboard';
                         }
                     }, 1000);
-                } else {
-                    messageDiv.textContent = '❌ ' + data.message;
+                } else if (data.email_not_verified) {
+                    // Show unverified email message with resend button
+                    messageDiv.innerHTML = data.message +
+                        '<br><button onclick="resendVerification(\'' + data.email + '\')" ' +
+                        'style="margin-top:8px;background:linear-gradient(135deg,#4a7560,#7daa8e);color:white;border:none;padding:8px 18px;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;font-family:inherit;">' +
+                        'Resend Verification Email</button>';
                     messageDiv.className = 'message message-error';
-                    
-                    // Re-enable button
                     loginBtn.disabled = false;
                     loginBtnText.style.display = 'inline';
+                    loginArrow.style.display = 'inline';
+                    loginSpinner.style.display = 'none';
+                } else {
+                    messageDiv.textContent = data.message;
+                    messageDiv.className = 'message message-error';
+                    loginBtn.disabled = false;
+                    loginBtnText.style.display = 'inline';
+                    loginArrow.style.display = 'inline';
                     loginSpinner.style.display = 'none';
                 }
             } catch (error) {
-                messageDiv.textContent = '❌ Login failed. Please try again.';
+                messageDiv.textContent = 'Login failed. Please try again.';
                 messageDiv.className = 'message message-error';
-                
-                // Re-enable button
                 loginBtn.disabled = false;
                 loginBtnText.style.display = 'inline';
+                loginArrow.style.display = 'inline';
                 loginSpinner.style.display = 'none';
             }
         });
 
-        // Add animation on load
+        async function resendVerification(email) {
+            const messageDiv = document.getElementById('loginMessage');
+            try {
+                const response = await fetch('/api/resend-verification', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: email })
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    messageDiv.textContent = data.message;
+                    messageDiv.className = 'message message-success';
+                } else {
+                    messageDiv.textContent = data.message;
+                    messageDiv.className = 'message message-error';
+                }
+            } catch {
+                messageDiv.textContent = 'Failed to resend. Please try again.';
+                messageDiv.className = 'message message-error';
+            }
+        }
+
+        // Entrance
         window.addEventListener('DOMContentLoaded', function() {
-            document.querySelector('.auth-container').classList.add('loaded');
+            setTimeout(() => document.getElementById('authCard').classList.add('loaded'), 80);
+        });
+
+        // Focus first input
+        window.addEventListener('load', function() {
+            setTimeout(() => document.getElementById('identifier').focus(), 500);
         });
     </script>
 </body>
 </html>
-
