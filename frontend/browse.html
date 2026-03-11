@@ -2,91 +2,228 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <meta name="darkreader-lock">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse All Pets</title>
+    <title>Browse Pets — Adoptly</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="pet-card-styles.css">
+    <style>
+        /* ── Pagination ── */
+        .pagination-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 2.5rem;
+            padding-bottom: 1rem;
+        }
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .page-btn {
+            min-width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+            color: var(--text-primary, #1e293b);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0 0.5rem;
+        }
+        .page-btn:hover:not(.active):not(:disabled) {
+            background: #f0fdf4;
+            border-color: #2d6a4f;
+            color: #2d6a4f;
+        }
+        .page-btn.active {
+            background: #2d6a4f;
+            color: #fff;
+            border-color: #2d6a4f;
+            box-shadow: 0 2px 8px rgba(45,106,79,0.25);
+        }
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .page-btn.nav-btn {
+            min-width: 44px;
+            font-size: 1.1rem;
+        }
+        .page-ellipsis {
+            min-width: 32px;
+            text-align: center;
+            color: var(--text-muted, #94a3b8);
+            font-weight: 700;
+            letter-spacing: 2px;
+            user-select: none;
+        }
+        .pagination-info {
+            color: var(--text-secondary, #64748b);
+            font-size: 0.88rem;
+        }
+        .pagination-info strong {
+            color: var(--text-primary, #1e293b);
+        }
+
+        /* ── Per-page selector ── */
+        .browse-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .filter-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .per-page-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.88rem;
+            color: var(--text-secondary, #64748b);
+        }
+        .per-page-selector select {
+            padding: 0.35rem 0.6rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.88rem;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <span class="logo-icon">🐾</span>
-                <span class="logo-text">PetMatch</span>
-            </div>
-            <div class="nav-menu">
+            <a href="/dashboard" class="nav-logo">
+                <div class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg></div>
+                <span class="logo-text">Adoptly</span>
+            </a>
+            <button class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+            <div class="nav-menu" id="navMenu">
                 <a href="dashboard.html" class="nav-link">Dashboard</a>
                 <a href="quiz.html" class="nav-link">Take Quiz</a>
-                <a href="search.html" class="nav-link">Search Pets</a>
-                <a href="browse.html" class="nav-link active">Browse All</a>
-                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+                <a href="search.html" class="nav-link">Search</a>
+                <a href="browse.html" class="nav-link active">Browse</a>
+                <a href="#" onclick="logout()" class="nav-link" style="color: var(--danger);">Sign Out</a>
             </div>
         </div>
     </nav>
 
-    <div class="container" style="padding: 3rem 2rem;">
-        <div class="results-header">
-            <h1>Browse All Available Pets</h1>
-            <p>Showing <span id="petCount">0</span> adorable pets waiting for a home</p>
+    <div class="container" style="padding: 2.5rem 2rem 4rem;">
+        <div class="results-header" style="margin-bottom: 1.5rem;">
+            <h1 style="font-size:1.85rem;font-weight:800;letter-spacing:-0.02em;">Browse All Pets</h1>
+            <p style="color:var(--text-secondary);">Showing <span id="petCount">0</span> of <span id="totalCount">0</span> pets waiting for a home</p>
         </div>
 
-        <div class="filter-group" style="justify-content: center; margin-bottom: 2rem;">
-            <select id="typeFilter" class="filter-select" onchange="loadPets()">
-                <option value="">All Types</option>
-                <option value="dog">Dogs</option>
-                <option value="cat">Cats</option>
-                <option value="bird">Birds</option>
-                <option value="rabbit">Rabbits</option>
-            </select>
-            <select id="sizeFilter" class="filter-select" onchange="loadPets()">
-                <option value="">All Sizes</option>
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-            </select>
-            <select id="energyFilter" class="filter-select" onchange="loadPets()">
-                <option value="">All Energy Levels</option>
-                <option value="low">Low</option>
-                <option value="moderate">Moderate</option>
-                <option value="high">High</option>
-            </select>
-        </div>
-
-        <div id="loading" style="display: none;">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Loading pets...</p>
+        <div class="browse-controls">
+            <div class="filter-row">
+                <select id="typeFilter" class="filter-select" onchange="resetAndLoad()">
+                    <option value="">All Types</option>
+                    <option value="dog">Dogs</option>
+                    <option value="cat">Cats</option>
+                    <option value="bird">Birds</option>
+                    <option value="rabbit">Rabbits</option>
+                </select>
+                <select id="sizeFilter" class="filter-select" onchange="resetAndLoad()">
+                    <option value="">All Sizes</option>
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                </select>
+                <select id="energyFilter" class="filter-select" onchange="resetAndLoad()">
+                    <option value="">All Energy</option>
+                    <option value="low">Low</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <div class="per-page-selector">
+                <label for="perPage">Show</label>
+                <select id="perPage" onchange="resetAndLoad()">
+                    <option value="12">12</option>
+                    <option value="24" selected>24</option>
+                    <option value="48">48</option>
+                    <option value="96">96</option>
+                </select>
+                <span>per page</span>
             </div>
         </div>
 
+        <div id="loading" style="display: none;">
+            <div class="loading"><div class="spinner"></div><p>Loading pets...</p></div>
+        </div>
+
         <div id="petsGrid" class="results-container"></div>
+
+        <!-- Pagination -->
+        <div class="pagination-wrapper" id="paginationWrapper" style="display:none;">
+            <div class="pagination" id="pagination"></div>
+            <div class="pagination-info" id="paginationInfo"></div>
+        </div>
     </div>
 
     <script>
-        async function loadPets() {
+        let currentPage = 1;
+        let totalPages = 1;
+
+        function resetAndLoad() {
+            currentPage = 1;
+            loadPets();
+        }
+
+        async function loadPets(page) {
+            if (page !== undefined) currentPage = page;
+
             const typeFilter = document.getElementById('typeFilter').value;
             const sizeFilter = document.getElementById('sizeFilter').value;
             const energyFilter = document.getElementById('energyFilter').value;
-            
+            const perPage = document.getElementById('perPage').value;
+
             const params = new URLSearchParams();
             if (typeFilter) params.append('type', typeFilter);
             if (sizeFilter) params.append('size', sizeFilter);
             if (energyFilter) params.append('energy_level', energyFilter);
-            params.append('limit', '50');
-            
+            params.append('page', currentPage);
+            params.append('per_page', perPage);
+
             document.getElementById('loading').style.display = 'block';
             document.getElementById('petsGrid').innerHTML = '';
-            
+            document.getElementById('paginationWrapper').style.display = 'none';
+
             try {
-                const response = await fetch('/api/pets?' + params.toString(), {
-                    credentials: 'include'
-                });
+                const response = await fetch('/api/pets?' + params.toString(), { credentials: 'include' });
                 const data = await response.json();
-                
                 document.getElementById('loading').style.display = 'none';
-                
+
                 if (data.ok) {
+                    currentPage = data.page;
+                    totalPages = data.total_pages;
+
                     document.getElementById('petCount').textContent = data.count;
+                    document.getElementById('totalCount').textContent = data.total_count;
                     displayPets(data.pets);
+                    renderPagination(data);
+                    
+                    // Scroll to top when changing pages
+                    if (page !== undefined) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                 } else {
                     alert('Error: ' + data.message);
                 }
@@ -96,79 +233,139 @@
             }
         }
 
+        function getPetEmoji(type) {
+            const map = { Dog: '\uD83D\uDC36', Cat: '\uD83D\uDC31', Bird: '\uD83D\uDC26', Rabbit: '\uD83D\uDC30' };
+            return map[type] || '\uD83D\uDC3E';
+        }
+
         function displayPets(pets) {
             const grid = document.getElementById('petsGrid');
-            
-            if (pets.length === 0) {
-                grid.innerHTML = '<p style="text-align: center; color: var(--gray);">No pets found with selected filters.</p>';
+            if (!pets.length) {
+                grid.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">No pets found with selected filters.</p>';
                 return;
             }
-            
-            grid.innerHTML = pets.map(pet => `
-                <div class="pet-card">
-                    <div class="pet-header">
-                        <div class="pet-title">
-                            <h3>${pet.name}</h3>
-                            <div class="pet-breed">${pet.type} • ${pet.breed}</div>
+            grid.className = 'pet-cards-grid';
+            grid.innerHTML = pets.map(pet => {
+                const hasImage = pet.image_url && pet.image_url.length > 0;
+                const avatarHtml = hasImage
+                    ? `<img src="${pet.image_url}" alt="${pet.name}" class="pet-avatar" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=\\'pet-avatar-placeholder\\'>${getPetEmoji(pet.type)}</div>';">`
+                    : `<div class="pet-avatar-placeholder">${getPetEmoji(pet.type)}</div>`;
+                return `
+                <div class="pet-card-with-image">
+                    <div class="pet-card-top">
+                        <div class="pet-type-label">${pet.type}</div>
+                        <div class="pet-name">${pet.name}</div>
+                        <div class="pet-breed-line">${pet.breed} · ${pet.color}</div>
+
+                        <div class="pet-avatar-wrapper">${avatarHtml}</div>
+                    </div>
+                    <div class="pet-card-body">
+                        <div class="pet-details-chips">
+                            <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${pet.age_months} mo</span>
+                            <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c-4.97 0-9-2.24-9-5v-6c0-2.76 4.03-5 9-5s9 2.24 9 5v6c0 2.76-4.03 5-9 5z"/></svg>${pet.size}</span>
+                            <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${pet.gender}</span>
+                            <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>${pet.energy_level}</span>
+                        </div>
+                        <div class="pet-tags">
+                            ${pet.vaccinated ? '<span class="pet-tag tag-vaccinated">✓ Vaccinated</span>' : ''}
+                            ${pet.kid_friendly ? '<span class="pet-tag tag-kid-friendly">♥ Kid Friendly</span>' : ''}
+                            <span class="pet-tag tag-health">${pet.health_condition}</span>
+                        </div>
+                        <div class="pet-card-actions">
+                            <button class="btn-details" onclick="viewDetails(${pet.id})">View Profile</button>
+                            <button class="btn-favorite" onclick="toggleFavorite(${pet.id}, event)" title="Add to favorites">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="pet-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Age</div>
-                            <div class="detail-value">${pet.age_months} months</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Size</div>
-                            <div class="detail-value">${pet.size}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Gender</div>
-                            <div class="detail-value">${pet.gender}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Energy</div>
-                            <div class="detail-value">${pet.energy_level}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="pet-description">
-                        "${pet.description.substring(0, 100)}..."
-                    </div>
-                    
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
-                        ${pet.vaccinated ? '<span class="feature-tag" style="background: #d1fae5; color: #065f46;">✓ Vaccinated</span>' : ''}
-                        ${pet.kid_friendly ? '<span class="feature-tag" style="background: #dbeafe; color: #1e40af;">✓ Kid Friendly</span>' : ''}
-                    </div>
-                    
-                    <div class="pet-actions">
-                        <button class="btn btn-primary" onclick="viewDetails(${pet.id})">View Details</button>
-                    </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
-        function viewDetails(petId) {
-            window.location.href = `pet-details.html?id=${petId}`;
+        function toggleFavorite(petId, e) {
+            fetch('/api/favorites/' + petId, { method: 'POST', credentials: 'include' })
+            .then(r => r.json())
+            .then(d => {
+                if (d.ok) {
+                    const btn = e.target.closest('.btn-favorite');
+                    btn.classList.toggle('favorited');
+                }
+            }).catch(() => {});
         }
 
-        // Load pets on page load
-        window.addEventListener('DOMContentLoaded', loadPets);
+        function renderPagination(data) {
+            const wrapper = document.getElementById('paginationWrapper');
+            const paginationEl = document.getElementById('pagination');
+            const infoEl = document.getElementById('paginationInfo');
 
-        // Logout function
-        async function logout() {
-            try {
-                await fetch('/api/logout', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                window.location.href = '/login';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                window.location.href = '/login';
+            if (data.total_pages <= 1) {
+                wrapper.style.display = data.total_count > 0 ? 'flex' : 'none';
+                paginationEl.innerHTML = '';
+                const start = (data.page - 1) * data.per_page + 1;
+                const end = Math.min(data.page * data.per_page, data.total_count);
+                infoEl.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${data.total_count}</strong> pets`;
+                return;
             }
+
+            wrapper.style.display = 'flex';
+            let html = '';
+
+            // Previous button
+            html += `<button class="page-btn nav-btn" onclick="loadPets(${data.page - 1})" ${data.page <= 1 ? 'disabled' : ''} title="Previous page">‹</button>`;
+
+            // Page numbers with smart ellipsis
+            const pages = getPageNumbers(data.page, data.total_pages);
+            for (const p of pages) {
+                if (p === '...') {
+                    html += `<span class="page-ellipsis">…</span>`;
+                } else {
+                    html += `<button class="page-btn ${p === data.page ? 'active' : ''}" onclick="loadPets(${p})">${p}</button>`;
+                }
+            }
+
+            // Next button
+            html += `<button class="page-btn nav-btn" onclick="loadPets(${data.page + 1})" ${data.page >= data.total_pages ? 'disabled' : ''} title="Next page">›</button>`;
+
+            paginationEl.innerHTML = html;
+
+            // Info text: "Showing 25–48 of 1985 pets"
+            const start = (data.page - 1) * data.per_page + 1;
+            const end = Math.min(data.page * data.per_page, data.total_count);
+            infoEl.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${data.total_count}</strong> pets`;
         }
+
+        /**
+         * Generate an array of page numbers with ellipsis.
+         * e.g. [1, '...', 4, 5, 6, '...', 83]
+         */
+        function getPageNumbers(current, total) {
+            const delta = 2; // pages shown around current
+            const pages = [];
+            const rangeStart = Math.max(2, current - delta);
+            const rangeEnd = Math.min(total - 1, current + delta);
+
+            // Always show page 1
+            pages.push(1);
+
+            if (rangeStart > 2) pages.push('...');
+
+            for (let i = rangeStart; i <= rangeEnd; i++) {
+                pages.push(i);
+            }
+
+            if (rangeEnd < total - 1) pages.push('...');
+
+            // Always show last page (if more than 1)
+            if (total > 1) pages.push(total);
+
+            return pages;
+        }
+
+        function viewDetails(petId) { window.location.href = `pet-details.html?id=${petId}`; }
+        window.addEventListener('DOMContentLoaded', () => loadPets());
+        function toggleMenu() { document.getElementById('navMenu').classList.toggle('active'); document.querySelector('.hamburger').classList.toggle('active'); }
+        async function logout() { try { await fetch('/api/logout',{method:'POST',credentials:'include'}); } catch {} window.location.href='/'; }
+        window.addEventListener('scroll', () => { document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20); });
     </script>
 </body>
 </html>
-
