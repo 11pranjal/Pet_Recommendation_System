@@ -2,26 +2,94 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <meta name="darkreader-lock">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Pets - PetMatch Admin</title>
+    <title>Manage Pets - Adoptly Admin</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin-styles.css">
+    <style>
+        /* ── Image Upload Area ── */
+        .image-upload-area {
+            margin-bottom: 1rem;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: #fafbfc;
+        }
+        .image-upload-area:hover,
+        .image-upload-area.drag-over {
+            border-color: #2d6a4f;
+            background: #f0faf4;
+        }
+        .image-upload-area.uploading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .upload-preview-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+            position: relative;
+        }
+        .upload-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        .upload-preview-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center 25%;
+            border: 3px solid #2d6a4f;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .upload-remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: #ef4444;
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: background 0.2s;
+        }
+        .upload-remove-btn:hover {
+            background: #dc2626;
+        }
+    </style>
 </head>
 <body>
     <!-- Admin Navigation -->
     <nav class="admin-nav">
         <div class="nav-container">
-            <div class="nav-logo">
-                <span class="logo-icon">⚙️</span>
-                <span class="logo-text">PetMatch Admin</span>
-            </div>
+            <a href="/admin-dashboard" class="nav-logo">
+                <div class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg></div>
+                <span class="logo-text">Adoptly Admin</span>
+            </a>
             <div class="nav-menu">
                 <a href="/admin-dashboard" class="nav-link">Dashboard</a>
                 <a href="/admin-adoptions.html" class="nav-link">Adoptions</a>
                 <a href="/admin-users.html" class="nav-link">Users</a>
                 <a href="/admin-pets.html" class="nav-link active">Pets</a>
                 <a href="/dashboard" class="nav-link">Customer View</a>
-                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+                <a href="#" onclick="logout()" class="nav-link" style="color:var(--danger);">Sign Out</a>
             </div>
         </div>
     </nav>
@@ -32,7 +100,7 @@
             <h1 class="section-title">Pet Management</h1>
             <div style="display: flex; gap: 1rem;">
                 <button class="btn btn-primary" onclick="openAddModal()">
-                    ➕ Add New Pet
+                    Add New Pet
                 </button>
                 <button class="btn btn-secondary" onclick="toggleShowHidden()">
                     <span id="showHiddenText">Show Hidden Pets</span>
@@ -48,7 +116,7 @@
                         <div class="stat-value" id="totalPets">0</div>
                         <div class="stat-label">Total Pets</div>
                     </div>
-                    <div class="stat-icon">🐾</div>
+                    <div class="stat-icon"></div>
                 </div>
             </div>
             <div class="stat-card success">
@@ -57,7 +125,7 @@
                         <div class="stat-value" id="availablePets">0</div>
                         <div class="stat-label">Available</div>
                     </div>
-                    <div class="stat-icon">✅</div>
+                    <div class="stat-icon"></div>
                 </div>
             </div>
             <div class="stat-card warning">
@@ -66,7 +134,7 @@
                         <div class="stat-value" id="adoptedPets">0</div>
                         <div class="stat-label">Adopted</div>
                     </div>
-                    <div class="stat-icon">🏠</div>
+                    <div class="stat-icon info">S</div>
                 </div>
             </div>
             <div class="stat-card danger">
@@ -75,7 +143,7 @@
                         <div class="stat-value" id="hiddenPets">0</div>
                         <div class="stat-label">Hidden</div>
                     </div>
-                    <div class="stat-icon">🚫</div>
+                    <div class="stat-icon danger">H</div>
                 </div>
             </div>
         </div>
@@ -149,7 +217,7 @@
             </div>
             <div class="modal-body">
                 <p style="margin-bottom: 1rem;">Are you sure you want to hide <strong id="hidePetName"></strong>?</p>
-                <p style="color: var(--gray); font-size: 0.875rem; margin-bottom: 1.5rem;">This pet will be removed from all listings until you unhide it.</p>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">This pet will be removed from all listings until you unhide it.</p>
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Reason (optional):</label>
                     <input 
@@ -176,16 +244,24 @@
                 <button class="modal-close" onclick="closeAddModal()">&times;</button>
             </div>
             <div class="modal-body">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Pet ID and name are auto-generated. Fields align with the dataset for accurate recommendations.</p>
+                <!-- Image Upload -->
+                <div id="addImageUploadArea" class="image-upload-area" onclick="document.getElementById('addImageFile').click()" ondrop="handleAddDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <input type="file" id="addImageFile" accept="image/*" style="display:none;" onchange="handleAddFileSelect(this)">
+                    <div id="addImagePreview" class="upload-preview-wrap">
+                        <div class="upload-placeholder">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            <span>Click or drag &amp; drop pet image</span>
+                            <span style="font-size:0.75rem;color:#94a3b8;">PNG, JPG, WEBP — max 10 MB</span>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="addImageFilename" value="">
                 <form id="addPetForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Name *</label>
-                        <input type="text" id="petName" class="filter-input" required style="width: 100%;">
-                    </div>
-                    
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type *</label>
-                        <select id="petType" class="filter-select" required style="width: 100%;">
-                            <option value="">Select Type</option>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">PetType *</label>
+                        <select id="petType" class="filter-select" required style="width: 100%;" onchange="onAddTypeChange()">
+                            <option value="">Select</option>
                             <option value="Dog">Dog</option>
                             <option value="Cat">Cat</option>
                             <option value="Bird">Bird</option>
@@ -195,90 +271,261 @@
                     
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Breed *</label>
-                        <input type="text" id="petBreed" class="filter-input" required style="width: 100%;">
+                        <input type="text" id="petBreed" class="filter-input" list="petBreedList" required style="width: 100%;" placeholder="Select or type breed" oninput="onAddBreedChange()">
+                        <datalist id="petBreedList"></datalist>
                     </div>
                     
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Age (years) *</label>
-                        <input type="number" id="petAge" class="filter-input" required min="0" max="30" style="width: 100%;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">AgeMonths *</label>
+                        <input type="number" id="petAgeMonths" class="filter-input" required min="0" max="360" style="width: 100%;" placeholder="Total months">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">WeightKg *</label>
+                        <input type="number" id="petWeight" class="filter-input" required min="0.01" step="0.01" style="width: 100%;">
                     </div>
                     
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Size *</label>
                         <select id="petSize" class="filter-select" required style="width: 100%;">
-                            <option value="">Select Size</option>
-                            <option value="Small">Small</option>
-                            <option value="Medium">Medium</option>
+                            <option value="">Select</option>
                             <option value="Large">Large</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Small">Small</option>
                         </select>
                     </div>
                     
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Color *</label>
-                        <input type="text" id="petColor" class="filter-input" required style="width: 100%;">
+                        <input type="text" id="petColor" class="filter-input" list="petColorList" required style="width: 100%;" placeholder="Select or type color">
+                        <datalist id="petColorList"></datalist>
                     </div>
                     
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Gender *</label>
                         <select id="petGender" class="filter-select" required style="width: 100%;">
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
+                            <option value="">Select</option>
                             <option value="Female">Female</option>
+                            <option value="Male">Male</option>
                         </select>
                     </div>
                     
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Weight (kg) *</label>
-                        <input type="number" id="petWeight" class="filter-input" required min="0" step="0.1" style="width: 100%;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Energy level *</label>
+                        <select id="petEnergy" class="filter-select" required style="width: 100%;">
+                            <option value="">Select</option>
+                            <option value="High">High</option>
+                            <option value="Low">Low</option>
+                            <option value="Moderate">Moderate</option>
+                        </select>
                     </div>
                     
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Vaccinated *</label>
                         <select id="petVaccinated" class="filter-select" required style="width: 100%;">
                             <option value="">Select</option>
-                            <option value="true">Yes</option>
                             <option value="false">No</option>
+                            <option value="true">Yes</option>
                         </select>
                     </div>
                     
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Health Condition *</label>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">HealthCondition *</label>
                         <select id="petHealth" class="filter-select" required style="width: 100%;">
                             <option value="">Select</option>
                             <option value="Excellent">Excellent</option>
                             <option value="Good">Good</option>
-                            <option value="Fair">Fair</option>
                         </select>
                     </div>
                     
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Kid Friendly *</label>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">kid_friendliness *</label>
                         <select id="petKidFriendly" class="filter-select" required style="width: 100%;">
+                            <option value="">Select</option>
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">shedding *</label>
+                        <select id="petShedding" class="filter-select" required style="width: 100%;">
+                            <option value="">Select PetType first</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">MeatConsumption *</label>
+                        <select id="petMeat" class="filter-select" required style="width: 100%;">
                             <option value="">Select</option>
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                         </select>
                     </div>
                     
+                    <div style="grid-column: 1 / -1;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">FoodPreference *</label>
+                        <input type="text" id="petFood" class="filter-input" list="petFoodList" required style="width: 100%;" placeholder="Select from suggestions or type custom">
+                        <datalist id="petFoodList"></datalist>
+                    </div>
+                    
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Energy Level *</label>
-                        <select id="petEnergy" class="filter-select" required style="width: 100%;">
-                            <option value="">Select</option>
-                            <option value="Low">Low</option>
-                            <option value="Moderate">Moderate</option>
-                            <option value="High">High</option>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">PreviousOwner</label>
+                        <select id="petPrevOwner" class="filter-select" style="width: 100%;">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
                         </select>
                     </div>
                     
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">TimeInShelterDays</label>
+                        <input type="number" id="petShelterDays" class="filter-input" min="0" value="0" style="width: 100%;">
+                    </div>
+                    
                     <div style="grid-column: 1 / -1;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
-                        <textarea id="petDescription" class="filter-input" rows="3" style="width: 100%; resize: vertical;" placeholder="Describe the pet's personality and characteristics..."></textarea>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">pet_details</label>
+                        <textarea id="petDescription" class="filter-input" rows="3" style="width: 100%; resize: vertical;" placeholder="e.g. loyal, playful, friendly, loves outdoor activities..."></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="submitAddPet()">Add Pet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Edit Pet -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Pet — <span id="editPetLabel"></span></h2>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Pet ID and name cannot be changed. Fields align with the dataset.</p>
+                <!-- Image Upload -->
+                <div id="editImageUploadArea" class="image-upload-area" onclick="document.getElementById('editImageFile').click()" ondrop="handleEditDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <input type="file" id="editImageFile" accept="image/*" style="display:none;" onchange="handleEditFileSelect(this)">
+                    <div id="editImagePreview" class="upload-preview-wrap">
+                        <div class="upload-placeholder">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            <span>Click or drag &amp; drop to change image</span>
+                            <span style="font-size:0.75rem;color:#94a3b8;">PNG, JPG, WEBP — max 10 MB</span>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="editImageFilename" value="">
+                <form id="editPetForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <input type="hidden" id="editPetId">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">PetType *</label>
+                        <select id="editType" class="filter-select" required style="width: 100%;" onchange="onEditTypeChange()">
+                            <option value="Dog">Dog</option>
+                            <option value="Cat">Cat</option>
+                            <option value="Bird">Bird</option>
+                            <option value="Rabbit">Rabbit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Breed *</label>
+                        <input type="text" id="editBreed" class="filter-input" list="editBreedList" required style="width: 100%;" placeholder="Select or type breed" oninput="onEditBreedChange()">
+                        <datalist id="editBreedList"></datalist>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">AgeMonths *</label>
+                        <input type="number" id="editAgeMonths" class="filter-input" required min="0" max="360" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">WeightKg *</label>
+                        <input type="number" id="editWeight" class="filter-input" required min="0.01" step="0.01" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Size *</label>
+                        <select id="editSize" class="filter-select" required style="width: 100%;">
+                            <option value="Large">Large</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Small">Small</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Color *</label>
+                        <input type="text" id="editColor" class="filter-input" list="editColorList" required style="width: 100%;" placeholder="Select or type color">
+                        <datalist id="editColorList"></datalist>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Gender *</label>
+                        <select id="editGender" class="filter-select" required style="width: 100%;">
+                            <option value="Female">Female</option>
+                            <option value="Male">Male</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Energy level *</label>
+                        <select id="editEnergy" class="filter-select" required style="width: 100%;">
+                            <option value="High">High</option>
+                            <option value="Low">Low</option>
+                            <option value="Moderate">Moderate</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Vaccinated *</label>
+                        <select id="editVaccinated" class="filter-select" required style="width: 100%;">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">HealthCondition *</label>
+                        <select id="editHealth" class="filter-select" required style="width: 100%;">
+                            <option value="Excellent">Excellent</option>
+                            <option value="Good">Good</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">kid_friendliness *</label>
+                        <select id="editKidFriendly" class="filter-select" required style="width: 100%;">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">shedding *</label>
+                        <select id="editShedding" class="filter-select" required style="width: 100%;">
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">MeatConsumption *</label>
+                        <select id="editMeat" class="filter-select" required style="width: 100%;">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">FoodPreference *</label>
+                        <input type="text" id="editFood" class="filter-input" list="editFoodList" required style="width: 100%;" placeholder="Select from suggestions or type custom">
+                        <datalist id="editFoodList"></datalist>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">PreviousOwner</label>
+                        <select id="editPrevOwner" class="filter-select" style="width: 100%;">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">TimeInShelterDays</label>
+                        <input type="number" id="editShelterDays" class="filter-input" min="0" style="width: 100%;">
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">pet_details</label>
+                        <textarea id="editDescription" class="filter-input" rows="3" style="width: 100%; resize: vertical;" placeholder="e.g. loyal, playful, friendly, loves outdoor activities..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitEditPet()">Save Changes</button>
             </div>
         </div>
     </div>
@@ -292,8 +539,8 @@
             </div>
             <div class="modal-body">
                 <p style="margin-bottom: 1rem;">Are you sure you want to <strong style="color: var(--admin-danger);">permanently delete</strong> <strong id="deletePetName"></strong>?</p>
-                <p style="color: var(--admin-danger); font-weight: 600; margin-bottom: 1rem;">⚠️ This action CANNOT be undone!</p>
-                <p style="color: var(--gray); font-size: 0.875rem; margin-bottom: 1.5rem;">This pet will be completely removed from the database. All adoption requests for this pet will also be deleted.</p>
+                <p style="color: var(--admin-danger); font-weight: 600; margin-bottom: 1rem;">Warning: This action CANNOT be undone!</p>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">This pet will be completely removed from the database. All adoption requests for this pet will also be deleted.</p>
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type "DELETE" to confirm:</label>
                     <input 
@@ -313,6 +560,298 @@
     </div>
 
     <script>
+        // ==================== DATASET MAPPINGS ====================
+        // Exact values from the dataset — ensures custom pets align perfectly
+
+        const BREED_BY_TYPE = {
+            'Dog':    ['German Shepherd', 'Labrador', 'Pug', 'Retriever', 'Spitz'],
+            'Cat':    ['Domestic Shorthair', 'Persian'],
+            'Bird':   ['Parakeet'],
+            'Rabbit': ['Rabbit']
+        };
+
+        const COLOR_BY_TYPE = {
+            'Dog':    ['Beige', 'Black', 'Black And Red', 'Black And Sable', 'Black And Tan', 'Brown', 'Fawn', 'Orange', 'Sable', 'White'],
+            'Cat':    ['Black', 'Brown', 'Gray', 'Orange', 'White'],
+            'Bird':   ['Green'],
+            'Rabbit': ['Black', 'White']
+        };
+
+        // Breed-specific colors (for accurate image mapping)
+        const COLOR_BY_BREED = {
+            'German Shepherd': ['Sable', 'Black And Red', 'Black And Sable', 'Black And Tan'],
+            'Labrador':        ['Black', 'Brown', 'Grey', 'White', 'Beige'],
+            'Retriever':       ['Beige', 'Orange', 'White'],
+            'Pug':             ['Black', 'Fawn'],
+            'Spitz':           ['White'],
+            'Domestic Shorthair': ['Black', 'Gray', 'White'],
+            'Persian':         ['Black', 'Gray', 'Orange', 'White'],
+            'Parakeet':        ['Green'],
+            'Rabbit':          ['Black', 'White']
+        };
+
+        const SHEDDING_BY_TYPE = {
+            'Dog':    [3, 4, 5],
+            'Cat':    [3, 4],
+            'Bird':   [1],
+            'Rabbit': [3]
+        };
+
+        const SHEDDING_LABELS = {
+            1: '1 — Minimal', 3: '3 — Moderate', 4: '4 — High', 5: '5 — Heavy'
+        };
+
+        // Meat: Bird=0(No), Rabbit=0(No), Cat=1(Yes), Dog=1(Yes)
+        const MEAT_BY_TYPE = {
+            'Dog': true, 'Cat': true, 'Bird': false, 'Rabbit': false
+        };
+
+        // Food preference per breed (exact text from dataset)
+        const FOOD_BY_BREED = {
+            'German Shepherd': 'Active dog food, meat/rice/veg mix, eggs. Gradual food changes, calcium/joint support.',
+            'Labrador':        'Lab-specific dry food, meat, lentil soup & rice, eggs. Monitor calories, fish oil/joint supplements.',
+            'Pug':             'Small kibble, soft chicken & rice, small veg. Avoid oily/spicy, large treats.',
+            'Retriever':       'High-protein dry food, boneless chicken, eggs, rice. Portion control, avoid excessive beef/oily meat.',
+            'Spitz':           'Small-breed formulas, boiled egg, plain chicken, little rice. Avoid sweets, bones, human snacks, spicy/oily food.',
+            'Domestic Shorthair': 'Standard dry/wet cat food. Boiled chicken/fish/eggs. Avoid spicy/oily food, onion, garlic, bones, chocolate.',
+            'Persian':         'Persian dry/wet food for coat/hydration. Boiled chicken/fish, mashed pumpkin. High protein/omega, hairball control, encourage water.',
+            'Parakeet':        'Not specified',
+            'Rabbit':          'Mostly hay, fresh safe veggies daily, rabbit pellets. Occasional fruit. Avoid dal bhat, bread, dairy, meat, high-sugar fruits, spicy/oily food.'
+        };
+
+        // Helper: populate a <select> with options, optionally selecting a value
+        function populateSelect(selectId, items, valueKey, labelFn, selectedValue) {
+            const sel = document.getElementById(selectId);
+            sel.innerHTML = '<option value="">Select</option>';
+            items.forEach(item => {
+                const val = typeof valueKey === 'function' ? valueKey(item) : item;
+                const label = typeof labelFn === 'function' ? labelFn(item) : item;
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = label;
+                if (String(val) === String(selectedValue)) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        }
+
+        // Helper: populate a <datalist> with options
+        function populateDatalist(datalistId, inputId, items, selectedValue) {
+            const dl = document.getElementById(datalistId);
+            dl.innerHTML = '';
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                dl.appendChild(opt);
+            });
+            const input = document.getElementById(inputId);
+            if (selectedValue) input.value = selectedValue;
+            else input.value = '';
+        }
+
+        // ---------- Image upload helpers ----------
+        const UPLOAD_PLACEHOLDER = `
+            <div class="upload-placeholder">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span>Click or drag & drop pet image</span>
+                <span style="font-size:0.75rem;color:#94a3b8;">PNG, JPG, WEBP — max 10 MB</span>
+            </div>`;
+
+        function showUploadedPreview(previewId, imageUrl) {
+            const preview = document.getElementById(previewId);
+            preview.innerHTML = `
+                <img src="${imageUrl}" alt="Preview" class="upload-preview-img">
+                <button type="button" class="upload-remove-btn" onclick="event.stopPropagation(); removeUploadedImage('${previewId}')" title="Remove image">&times;</button>
+            `;
+        }
+
+        function removeUploadedImage(previewId) {
+            const preview = document.getElementById(previewId);
+            preview.innerHTML = UPLOAD_PLACEHOLDER;
+            // Clear the hidden filename
+            if (previewId === 'addImagePreview') {
+                const old = document.getElementById('addImageFilename').value;
+                document.getElementById('addImageFilename').value = '';
+                document.getElementById('addImageFile').value = '';
+                if (old) deleteUploadedFile(old);
+            } else {
+                const old = document.getElementById('editImageFilename').value;
+                document.getElementById('editImageFilename').value = '';
+                document.getElementById('editImageFile').value = '';
+                if (old) deleteUploadedFile(old);
+            }
+        }
+
+        async function deleteUploadedFile(filename) {
+            if (!filename) return;
+            try {
+                await fetch('/api/admin/delete-pet-image', {
+                    method: 'POST', credentials: 'include',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({filename})
+                });
+            } catch {}
+        }
+
+        async function uploadImageFile(file, previewId, filenameInputId) {
+            const area = document.getElementById(previewId).closest('.image-upload-area');
+            area.classList.add('uploading');
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const resp = await fetch('/api/admin/upload-pet-image', {
+                    method: 'POST', credentials: 'include', body: formData
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    document.getElementById(filenameInputId).value = data.filename;
+                    showUploadedPreview(previewId, data.image_url);
+                    showToast('Image uploaded!', 'success');
+                } else {
+                    showToast(data.message || 'Upload failed', 'error');
+                }
+            } catch (err) {
+                showToast('Upload failed: ' + err.message, 'error');
+            } finally {
+                area.classList.remove('uploading');
+            }
+        }
+
+        // Drag & drop handlers
+        function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+        function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+        function handleAddDrop(e) {
+            e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) uploadImageFile(file, 'addImagePreview', 'addImageFilename');
+        }
+        function handleEditDrop(e) {
+            e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) uploadImageFile(file, 'editImagePreview', 'editImageFilename');
+        }
+
+        function handleAddFileSelect(input) {
+            const file = input.files[0];
+            if (file) uploadImageFile(file, 'addImagePreview', 'addImageFilename');
+        }
+        function handleEditFileSelect(input) {
+            const file = input.files[0];
+            if (file) uploadImageFile(file, 'editImagePreview', 'editImageFilename');
+        }
+
+        // ---------- ADD modal dynamic handlers ----------
+        function onAddTypeChange() {
+            const type = document.getElementById('petType').value;
+            if (!type) return;
+
+            // Breed — datalist (allows custom entry)
+            populateDatalist('petBreedList', 'petBreed', BREED_BY_TYPE[type] || [], '');
+            // Color — datalist (allows custom entry), initially from type
+            populateDatalist('petColorList', 'petColor', COLOR_BY_TYPE[type] || [], '');
+            // Shedding
+            const sheds = SHEDDING_BY_TYPE[type] || [];
+            populateSelect('petShedding', sheds, null, v => SHEDDING_LABELS[v] || v, sheds.length === 1 ? sheds[0] : '');
+            // MeatConsumption — pre-select based on type but allow manual change
+            const meat = MEAT_BY_TYPE[type];
+            document.getElementById('petMeat').value = String(meat);
+            // Food (reset, will be set when breed changes)
+            document.getElementById('petFood').innerHTML = '<option value="">Select breed first</option>';
+            onAddBreedChange();
+        }
+
+        function onAddBreedChange() {
+            const breed = document.getElementById('petBreed').value.trim();
+            const type = document.getElementById('petType').value;
+            const foodDl = document.getElementById('petFoodList');
+            const foodInput = document.getElementById('petFood');
+
+            // Filter colors by breed (if recognized), fall back to type
+            if (breed && COLOR_BY_BREED[breed]) {
+                populateDatalist('petColorList', 'petColor', COLOR_BY_BREED[breed], '');
+            } else if (type) {
+                populateDatalist('petColorList', 'petColor', COLOR_BY_TYPE[type] || [], '');
+            }
+
+            // Populate datalist with breed-specific food preferences
+            foodDl.innerHTML = '';
+            const addedFoods = new Set();
+            if (type && BREED_BY_TYPE[type]) {
+                BREED_BY_TYPE[type].forEach(b => {
+                    const fp = FOOD_BY_BREED[b];
+                    if (fp && !addedFoods.has(fp)) {
+                        addedFoods.add(fp);
+                        const opt = document.createElement('option');
+                        opt.value = fp;
+                        foodDl.appendChild(opt);
+                    }
+                });
+            }
+            // Pre-fill with the breed's food preference if available
+            if (breed && FOOD_BY_BREED[breed]) {
+                foodInput.value = FOOD_BY_BREED[breed];
+            } else {
+                foodInput.value = '';
+            }
+
+        }
+
+        // ---------- EDIT modal dynamic handlers ----------
+        function onEditTypeChange(keepBreed, keepColor, keepShedding) {
+            const type = document.getElementById('editType').value;
+            if (!type) return;
+
+            populateDatalist('editBreedList', 'editBreed', BREED_BY_TYPE[type] || [], keepBreed || '');
+            populateDatalist('editColorList', 'editColor', COLOR_BY_TYPE[type] || [], keepColor || '');
+            const sheds = SHEDDING_BY_TYPE[type] || [];
+            populateSelect('editShedding', sheds, null, v => SHEDDING_LABELS[v] || v, keepShedding != null ? keepShedding : (sheds.length === 1 ? sheds[0] : ''));
+
+            // MeatConsumption — pre-select based on type but allow manual change
+            const meat = MEAT_BY_TYPE[type];
+            document.getElementById('editMeat').value = String(meat);
+            onEditBreedChange();
+        }
+
+        function onEditBreedChange(keepFood) {
+            const breed = document.getElementById('editBreed').value.trim();
+            const type = document.getElementById('editType').value;
+            const foodDl = document.getElementById('editFoodList');
+            const foodInput = document.getElementById('editFood');
+
+            // Filter colors by breed (if recognized), keep current value
+            const currentColor = document.getElementById('editColor').value;
+            if (breed && COLOR_BY_BREED[breed]) {
+                populateDatalist('editColorList', 'editColor', COLOR_BY_BREED[breed], currentColor);
+            }
+
+            // Populate datalist with breed-specific food preferences
+            foodDl.innerHTML = '';
+            const addedFoods = new Set();
+            if (type && BREED_BY_TYPE[type]) {
+                BREED_BY_TYPE[type].forEach(b => {
+                    const fp = FOOD_BY_BREED[b];
+                    if (fp && !addedFoods.has(fp)) {
+                        addedFoods.add(fp);
+                        const opt = document.createElement('option');
+                        opt.value = fp;
+                        foodDl.appendChild(opt);
+                    }
+                });
+            }
+            // Pre-fill: use keepFood if provided, else breed's default
+            if (keepFood) {
+                foodInput.value = keepFood;
+            } else if (breed && FOOD_BY_BREED[breed]) {
+                foodInput.value = FOOD_BY_BREED[breed];
+            } else {
+                foodInput.value = '';
+            }
+        }
+
+        // ==================== STATE ====================
+
         let currentUser = null;
         let allPets = [];
         let filteredPets = [];
@@ -472,7 +1011,7 @@
             if (filteredPets.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">🐾</div>
+                        <div class="empty-state-icon"></div>
                         <div class="empty-state-title">No pets found</div>
                         <div class="empty-state-text">Try adjusting your filters or search query.</div>
                     </div>
@@ -486,6 +1025,7 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th></th>
                                 <th>Name</th>
                                 <th>Type</th>
                                 <th>Breed</th>
@@ -510,13 +1050,17 @@
                                     statusClass = 'rejected';
                                 }
                                 
+                                const ageY = Math.floor((pet.age_months || 0) / 12);
+                                const ageM = (pet.age_months || 0) % 12;
+                                const ageStr = ageY > 0 ? `${ageY}y ${ageM}m` : `${ageM}m`;
                                 return `
                                 <tr>
-                                    <td>#${pet.pet_id}</td>
+                                    <td>#${pet.pet_id || pet.id}</td>
+                                    <td style="padding:0.25rem;">${pet.image_url ? `<img src="${pet.image_url}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;object-position:center 25%;border:2px solid #e0e7e3;">` : `<div style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:1rem;">🐾</div>`}</td>
                                     <td><strong>${pet.name}</strong></td>
                                     <td>${pet.type}</td>
                                     <td>${pet.breed}</td>
-                                    <td>${pet.age_years}y ${pet.age_months}m</td>
+                                    <td>${ageStr}</td>
                                     <td>${pet.size}</td>
                                     <td>
                                         <span class="status-badge ${statusClass}">
@@ -526,13 +1070,16 @@
                                     <td>
                                         <div class="action-buttons">
                                             <button class="btn-action btn-view" onclick='viewPetDetails(${JSON.stringify(pet).replace(/'/g, "&apos;")})'>View</button>
+                                            ${(pet.is_custom || pet.pet_id > 1985) && !isAdopted ? `
+                                                <button class="btn-action btn-approve" onclick='editPet(${JSON.stringify(pet).replace(/'/g, "&apos;")})'>Edit</button>
+                                            ` : ''}
                                             ${!isAdopted && !isHidden ? `
                                                 <button class="btn-action btn-delete" onclick='hidePet(${JSON.stringify({id: pet.pet_id, name: pet.name}).replace(/'/g, "&apos;")})'>Hide</button>
                                             ` : ''}
                                             ${isHidden ? `
                                                 <button class="btn-action btn-approve" onclick='unhidePet(${pet.pet_id}, "${pet.name}")'>Unhide</button>
                                             ` : ''}
-                                            ${pet.is_custom && !isAdopted ? `
+                                            ${(pet.is_custom || pet.pet_id > 1985) && !isAdopted ? `
                                                 <button class="btn-action btn-delete" onclick='deletePet(${JSON.stringify({id: pet.pet_id, name: pet.name}).replace(/'/g, "&apos;")})' style="background: #991b1b;">Delete</button>
                                             ` : ''}
                                         </div>
@@ -542,7 +1089,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div style="padding: 1rem; text-align: center; color: var(--gray); font-size: 0.875rem;">
+                <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.875rem;">
                     Showing ${filteredPets.length} of ${allPets.length} pets
                 </div>
             `;
@@ -564,17 +1111,25 @@
                 statusClass = 'rejected';
             }
             
+            const detailAgeY = Math.floor((pet.age_months || 0) / 12);
+            const detailAgeM = (pet.age_months || 0) % 12;
+            const detailAge = detailAgeY > 0 ? `${detailAgeY} years ${detailAgeM} months` : `${detailAgeM} months`;
+            
             modalBody.innerHTML = `
+                ${pet.image_url ? `
+                <div style="text-align:center;margin-bottom:1rem;">
+                    <img src="${pet.image_url}" alt="${pet.name}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;object-position:center 25%;border:3px solid #2d6a4f;box-shadow:0 2px 10px rgba(0,0,0,0.15);">
+                </div>` : ''}
                 <div class="detail-row">
-                    <div class="detail-label">Pet ID:</div>
-                    <div class="detail-value">#${pet.pet_id}</div>
+                    <div class="detail-label">PetID:</div>
+                    <div class="detail-value">#${pet.pet_id || pet.id}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Name:</div>
                     <div class="detail-value"><strong>${pet.name}</strong></div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Type:</div>
+                    <div class="detail-label">PetType:</div>
                     <div class="detail-value">${pet.type}</div>
                 </div>
                 <div class="detail-row">
@@ -582,8 +1137,8 @@
                     <div class="detail-value">${pet.breed}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Age:</div>
-                    <div class="detail-value">${pet.age_years} years ${pet.age_months} months</div>
+                    <div class="detail-label">AgeMonths:</div>
+                    <div class="detail-value">${detailAge} (${pet.age_months} months total)</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Size:</div>
@@ -598,24 +1153,44 @@
                     <div class="detail-value">${pet.gender}</div>
                 </div>
                 <div class="detail-row">
+                    <div class="detail-label">WeightKg:</div>
+                    <div class="detail-value">${pet.weight_kg} kg</div>
+                </div>
+                <div class="detail-row">
                     <div class="detail-label">Vaccinated:</div>
-                    <div class="detail-value">${pet.vaccinated ? 'Yes ✅' : 'No ❌'}</div>
+                    <div class="detail-value">${pet.vaccinated ? 'Yes' : 'No'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Health:</div>
-                    <div class="detail-value">${pet.health_condition || pet.health}</div>
+                    <div class="detail-label">HealthCondition:</div>
+                    <div class="detail-value">${pet.health_condition || pet.health || 'N/A'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Kid Friendly:</div>
-                    <div class="detail-value">${pet.kid_friendly ? 'Yes ✅' : 'No ❌'}</div>
+                    <div class="detail-label">kid_friendliness:</div>
+                    <div class="detail-value">${pet.kid_friendly ? 'Yes' : 'No'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Energy Level:</div>
+                    <div class="detail-label">Energy level:</div>
                     <div class="detail-value">${pet.energy_level}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Weight:</div>
-                    <div class="detail-value">${pet.weight_kg} kg</div>
+                    <div class="detail-label">MeatConsumption:</div>
+                    <div class="detail-value">${pet.meat_consumption ? 'Yes' : 'No'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">FoodPreference:</div>
+                    <div class="detail-value" style="font-size: 0.85rem;">${pet.food_preference || 'N/A'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">shedding:</div>
+                    <div class="detail-value">${pet.shedding_level != null ? (SHEDDING_LABELS[pet.shedding_level] || pet.shedding_level) : 'N/A'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">PreviousOwner:</div>
+                    <div class="detail-value">${pet.has_previous_owner ? 'Yes' : 'No'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">TimeInShelterDays:</div>
+                    <div class="detail-value">${pet.days_in_shelter != null ? pet.days_in_shelter + ' days' : 'N/A'}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Fee:</div>
@@ -629,6 +1204,7 @@
                         </span>
                     </div>
                 </div>
+                ${pet.is_custom ? '<div class="detail-row"><div class="detail-label">Source:</div><div class="detail-value"><span class="status-badge pending">Custom (Admin Added)</span></div></div>' : ''}
                 ${pet.pet_characteristics ? `
                     <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
                         <div class="detail-label" style="margin-bottom: 0.5rem;">Characteristics:</div>
@@ -722,6 +1298,19 @@
 
         function closeAddModal() {
             document.getElementById('addModal').classList.remove('active');
+            document.getElementById('addPetForm').reset();
+            // Reset dynamic dropdowns
+            document.getElementById('petBreed').value = '';
+            document.getElementById('petBreedList').innerHTML = '';
+            document.getElementById('petColor').value = '';
+            document.getElementById('petColorList').innerHTML = '';
+            document.getElementById('petShedding').innerHTML = '<option value="">Select PetType first</option>';
+            document.getElementById('petFood').value = '';
+            document.getElementById('petFoodList').innerHTML = '';
+            // Reset image upload
+            document.getElementById('addImagePreview').innerHTML = UPLOAD_PLACEHOLDER;
+            document.getElementById('addImageFilename').value = '';
+            document.getElementById('addImageFile').value = '';
         }
 
         function closeDeleteModal() {
@@ -768,6 +1357,118 @@
             }
         }
 
+        // ==================== EDIT PET ====================
+
+        let petToEdit = null;
+
+        function editPet(pet) {
+            petToEdit = pet;
+            const petId = pet.pet_id || pet.id;
+
+            document.getElementById('editPetId').value = petId;
+            document.getElementById('editPetLabel').textContent = pet.name;
+
+            // Set type first, then trigger dynamic population with current values
+            document.getElementById('editType').value = pet.type || 'Dog';
+            onEditTypeChange(pet.breed, pet.color, pet.shedding_level);
+            // Set food preference after breed dropdown is populated
+            onEditBreedChange(pet.food_preference);
+
+            document.getElementById('editAgeMonths').value = pet.age_months || 0;
+            document.getElementById('editWeight').value = pet.weight_kg || 0;
+            document.getElementById('editSize').value = pet.size || 'Medium';
+            document.getElementById('editGender').value = pet.gender || 'Male';
+            document.getElementById('editEnergy').value = pet.energy_level || 'Moderate';
+            document.getElementById('editVaccinated').value = pet.vaccinated ? 'true' : 'false';
+            document.getElementById('editHealth').value = pet.health_condition || pet.health || 'Good';
+            document.getElementById('editKidFriendly').value = pet.kid_friendly ? 'true' : 'false';
+            document.getElementById('editMeat').value = pet.meat_consumption ? 'true' : 'false';
+            document.getElementById('editPrevOwner').value = pet.has_previous_owner ? 'true' : 'false';
+            document.getElementById('editShelterDays').value = pet.days_in_shelter || 0;
+            document.getElementById('editDescription').value = pet.description || '';
+
+            document.getElementById('editModal').classList.add('active');
+
+            // Show existing image in the edit upload area
+            if (pet.image_url) {
+                showUploadedPreview('editImagePreview', pet.image_url);
+                // If it's an uploaded image, extract filename
+                if (pet.image_url.startsWith('/uploads/pets/')) {
+                    document.getElementById('editImageFilename').value = pet.image_url.replace('/uploads/pets/', '');
+                } else {
+                    document.getElementById('editImageFilename').value = '';
+                }
+            } else {
+                document.getElementById('editImagePreview').innerHTML = UPLOAD_PLACEHOLDER;
+                document.getElementById('editImageFilename').value = '';
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            petToEdit = null;
+        }
+
+        async function submitEditPet() {
+            const form = document.getElementById('editPetForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const petId = document.getElementById('editPetId').value;
+            const type = document.getElementById('editType').value;
+            const breed = document.getElementById('editBreed').value;
+
+            const imageFilename = document.getElementById('editImageFilename').value;
+
+            const petData = {
+                type: type,
+                breed: breed,
+                age_months: parseInt(document.getElementById('editAgeMonths').value),
+                size: document.getElementById('editSize').value,
+                color: document.getElementById('editColor').value,
+                gender: document.getElementById('editGender').value,
+                weight_kg: parseFloat(document.getElementById('editWeight').value),
+                vaccinated: document.getElementById('editVaccinated').value === 'true',
+                health_condition: document.getElementById('editHealth').value,
+                kid_friendly: document.getElementById('editKidFriendly').value === 'true',
+                energy_level: document.getElementById('editEnergy').value,
+                food_preference: document.getElementById('editFood').value,
+                meat_consumption: document.getElementById('editMeat').value === 'true',
+                shedding_level: parseInt(document.getElementById('editShedding').value),
+                has_previous_owner: document.getElementById('editPrevOwner').value === 'true',
+                days_in_shelter: parseInt(document.getElementById('editShelterDays').value || '0'),
+                description: document.getElementById('editDescription').value.trim(),
+                image_filename: imageFilename || ''
+            };
+
+            try {
+                const response = await fetch(`/api/admin/pets/${petId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(petData)
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    showToast(data.message || 'Pet updated successfully!', 'success');
+                    closeEditModal();
+                    loadStats();
+                    loadPets();
+                } else {
+                    showToast(data.message || 'Error updating pet', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating pet:', error);
+                showToast('Error updating pet', 'error');
+            }
+        }
+
+        // ==================== ADD PET ====================
+
         // Submit add pet form
         async function submitAddPet() {
             const form = document.getElementById('addPetForm');
@@ -778,20 +1479,30 @@
                 return;
             }
             
+            const type = document.getElementById('petType').value;
+            const breed = document.getElementById('petBreed').value;
+            
+            const imageFilename = document.getElementById('addImageFilename').value;
+            
             const petData = {
-                name: document.getElementById('petName').value.trim(),
-                type: document.getElementById('petType').value,
-                breed: document.getElementById('petBreed').value.trim(),
-                age_years: parseInt(document.getElementById('petAge').value),
+                type: type,
+                breed: breed,
+                age_months: parseInt(document.getElementById('petAgeMonths').value),
                 size: document.getElementById('petSize').value,
-                color: document.getElementById('petColor').value.trim(),
+                color: document.getElementById('petColor').value,
                 gender: document.getElementById('petGender').value,
                 weight_kg: parseFloat(document.getElementById('petWeight').value),
                 vaccinated: document.getElementById('petVaccinated').value === 'true',
                 health_condition: document.getElementById('petHealth').value,
                 kid_friendly: document.getElementById('petKidFriendly').value === 'true',
                 energy_level: document.getElementById('petEnergy').value,
-                description: document.getElementById('petDescription').value.trim()
+                food_preference: document.getElementById('petFood').value,
+                meat_consumption: document.getElementById('petMeat').value === 'true',
+                shedding_level: parseInt(document.getElementById('petShedding').value),
+                has_previous_owner: document.getElementById('petPrevOwner').value === 'true',
+                days_in_shelter: parseInt(document.getElementById('petShelterDays').value || '0'),
+                description: document.getElementById('petDescription').value.trim(),
+                image_filename: imageFilename || ''
             };
             
             try {
@@ -807,7 +1518,7 @@
                 const data = await response.json();
                 
                 if (data.ok) {
-                    showToast(`Pet "${petData.name}" added successfully!`, 'success');
+                    showToast(data.message || 'Pet added successfully!', 'success');
                     closeAddModal();
                     loadStats();
                     loadPets();
@@ -825,7 +1536,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             
-            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            const icon = type === 'success' ? '' : type === 'error' ? '' : 'i';
             
             toast.innerHTML = `
                 <div class="toast-icon">${icon}</div>
@@ -846,10 +1557,10 @@
                     method: 'POST',
                     credentials: 'include'
                 });
-                window.location.href = '/login';
+                window.location.href = '/';
             } catch (error) {
                 console.error('Logout failed:', error);
-                window.location.href = '/login';
+                window.location.href = '/';
             }
         }
 
@@ -869,6 +1580,12 @@
         document.getElementById('addModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeAddModal();
+            }
+        });
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
             }
         });
 
