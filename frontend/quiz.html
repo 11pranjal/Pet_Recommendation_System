@@ -2,496 +2,297 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <meta name="darkreader-lock">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pet Adoption Quiz - Find Your Perfect Match</title>
+    <title>Pet Adoption Quiz — Adoptly</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="pet-card-styles.css">
     <style>
         .progress-bar-container {
-            width: 100%;
-            height: 8px;
-            background: var(--lighter-gray);
+            width: 100%; height: 6px;
+            background: var(--border);
             border-radius: 10px;
             margin-bottom: 2rem;
             overflow: hidden;
         }
-
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            transition: width 0.3s ease;
+            background: var(--primary);
+            transition: width 0.4s var(--ease);
             border-radius: 10px;
         }
-
         .question-counter {
             text-align: center;
-            color: var(--gray);
+            color: var(--text-muted);
             margin-bottom: 1rem;
             font-weight: 600;
+            font-size: 0.875rem;
         }
-
-        .question-card {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .question-card.active {
-            display: block;
-        }
-
+        .question-card { display: none; animation: fadeIn 0.3s ease; }
+        .question-card.active { display: block; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .question-title {
-            font-size: 1.5rem;
-            color: var(--dark);
-            margin-bottom: 2rem;
-            font-weight: 600;
+            font-size: 1.35rem;
+            color: var(--text);
+            margin-bottom: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
         }
-
-        .radio-options {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
+        .radio-options { display: flex; flex-direction: column; gap: 0.75rem; }
         .radio-option {
             position: relative;
             display: flex;
             align-items: center;
-            padding: 1rem 1.5rem;
-            border: 2px solid var(--light-gray);
-            border-radius: 0.75rem;
+            padding: 0.9rem 1.25rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: var(--white);
+            transition: var(--transition);
+            background: var(--bg-muted);
         }
-
         .radio-option:hover {
-            border-color: var(--primary-color);
-            background: #f8f9ff;
-            transform: translateX(5px);
+            border-color: var(--primary);
+            background: var(--primary-pale);
+            transform: translateX(4px);
         }
-
         .radio-option input[type="radio"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 1rem;
+            width: 18px; height: 18px;
+            margin-right: 0.85rem;
             cursor: pointer;
-            accent-color: var(--primary-color);
+            accent-color: var(--primary);
         }
-
         .radio-option.selected {
-            border-color: var(--primary-color);
-            background: #f0f4ff;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            background: var(--primary-pale);
+            box-shadow: 0 0 0 3px rgba(61, 139, 99, 0.1);
         }
-
         .radio-label {
-            font-size: 1rem;
-            color: var(--dark);
+            font-size: 0.95rem;
+            color: var(--text);
             cursor: pointer;
             flex: 1;
+            font-weight: 500;
         }
-
         .navigation-buttons {
             display: flex;
             justify-content: space-between;
             gap: 1rem;
             margin-top: 2.5rem;
         }
-
         .btn-nav {
-            padding: 0.875rem 2rem;
+            padding: 0.75rem 1.75rem;
             border: none;
-            border-radius: 0.75rem;
-            font-size: 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-family: inherit;
         }
-
         .btn-previous {
-            background: var(--lighter-gray);
-            color: var(--dark-gray);
+            background: var(--bg-muted);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
         }
-
         .btn-previous:hover:not(:disabled) {
-            background: var(--light-gray);
+            background: var(--bg-card);
             transform: translateX(-3px);
         }
-
-        .btn-previous:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
+        .btn-previous:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-next {
-            background: var(--primary-color);
-            color: var(--white);
+            background: var(--primary);
+            color: white;
             margin-left: auto;
+            box-shadow: 0 4px 12px rgba(61,139,99,0.25);
         }
-
         .btn-next:hover:not(:disabled) {
-            background: #4f46e5;
+            background: var(--primary-hover);
             transform: translateX(3px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 6px 18px rgba(61,139,99,0.35);
         }
-
-        .btn-next:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
+        .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-submit {
-            background: var(--success-color);
-            color: var(--white);
+            background: var(--primary);
+            color: white;
             margin-left: auto;
+            box-shadow: 0 4px 12px rgba(61,139,99,0.25);
         }
-
         .btn-submit:hover:not(:disabled) {
-            background: #059669;
-            box-shadow: var(--shadow-lg);
+            background: var(--primary-hover);
+            box-shadow: 0 6px 18px rgba(61,139,99,0.35);
         }
-
-        .btn-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <span class="logo-icon">🐾</span>
-                <span class="logo-text">PetMatch</span>
-            </div>
-            <div class="nav-menu">
+            <a href="/dashboard" class="nav-logo">
+                <div class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="5" r="2"/><circle cx="17" cy="5" r="2"/><circle cx="4" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><ellipse cx="12" cy="16.5" rx="5" ry="3.5"/></svg></div>
+                <span class="logo-text">Adoptly</span>
+            </a>
+            <button class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+            <div class="nav-menu" id="navMenu">
                 <a href="dashboard.html" class="nav-link">Dashboard</a>
                 <a href="quiz.html" class="nav-link active">Take Quiz</a>
-                <a href="search.html" class="nav-link">Search Pets</a>
-                <a href="browse.html" class="nav-link">Browse All</a>
-                <a href="#" onclick="logout()" class="nav-link">Logout</a>
+                <a href="search.html" class="nav-link">Search</a>
+                <a href="browse.html" class="nav-link">Browse</a>
+                <a href="#" onclick="logout()" class="nav-link" style="color: var(--danger);">Sign Out</a>
             </div>
         </div>
     </nav>
 
-    <!-- Quiz Container -->
     <div class="quiz-container">
         <div class="quiz-card">
             <div class="quiz-header">
-                <h1>🐾 Find Your Perfect Pet</h1>
-                <p>Answer these questions to discover your ideal pet companion!</p>
+                <h1>Find Your Perfect Pet</h1>
+                <p>Answer these questions to discover your ideal companion.</p>
             </div>
 
-            <!-- Progress Bar -->
             <div class="progress-bar-container">
-                <div class="progress-bar" id="progressBar" style="width: 9.09%;"></div>
+                <div class="progress-bar" id="progressBar" style="width: 10%;"></div>
             </div>
-            <div class="question-counter" id="questionCounter">Question 1 of 11</div>
+            <div class="question-counter" id="questionCounter">Question 1 of 10</div>
 
-            <!-- Quiz Form -->
             <form id="quizForm">
-                <!-- Question 1: Home Type -->
                 <div class="question-card active" data-question="1">
                     <h3 class="question-title">1. What type of home do you live in?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="home_type" value="Apartment">
-                            <span class="radio-label">Apartment</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="home_type" value="House with small yard">
-                            <span class="radio-label">House with a small yard</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="home_type" value="House with large yard">
-                            <span class="radio-label">House with a large yard</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="home_type" value="Farm/Rural property">
-                            <span class="radio-label">Farm/Rural property</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="home_type" value="Apartment"><span class="radio-label">Apartment</span></label>
+                        <label class="radio-option"><input type="radio" name="home_type" value="House with small yard"><span class="radio-label">House with a small yard</span></label>
+                        <label class="radio-option"><input type="radio" name="home_type" value="House with large yard"><span class="radio-label">House with a large yard</span></label>
+                        <label class="radio-option"><input type="radio" name="home_type" value="Farm/Rural property"><span class="radio-label">Farm / Rural property</span></label>
                     </div>
                 </div>
-
-                <!-- Question 2: Activity Level -->
                 <div class="question-card" data-question="2">
                     <h3 class="question-title">2. How active are you on a daily basis?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="activity_level" value="Low">
-                            <span class="radio-label">Low</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="activity_level" value="Moderate">
-                            <span class="radio-label">Moderate</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="activity_level" value="High">
-                            <span class="radio-label">High</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="activity_level" value="Low"><span class="radio-label">Low</span></label>
+                        <label class="radio-option"><input type="radio" name="activity_level" value="Moderate"><span class="radio-label">Moderate</span></label>
+                        <label class="radio-option"><input type="radio" name="activity_level" value="High"><span class="radio-label">High</span></label>
                     </div>
                 </div>
-
-                <!-- Question 3: Children -->
                 <div class="question-card" data-question="3">
                     <h3 class="question-title">3. Do you have children at home?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="children" value="Yes">
-                            <span class="radio-label">Yes</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="children" value="No">
-                            <span class="radio-label">No</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="children" value="Plan to have">
-                            <span class="radio-label">Plan to have</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="children" value="Yes"><span class="radio-label">Yes</span></label>
+                        <label class="radio-option"><input type="radio" name="children" value="No"><span class="radio-label">No</span></label>
+                        <label class="radio-option"><input type="radio" name="children" value="Plan to have"><span class="radio-label">Plan to have</span></label>
                     </div>
                 </div>
-
-                <!-- Question 4: Current Pets -->
                 <div class="question-card" data-question="4">
-                    <h3 class="question-title">4. Do you currently have other pets?</h3>
+                    <h3 class="question-title">4. What age range do you prefer for your pet?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="current_pet" value="Yes">
-                            <span class="radio-label">Yes</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="current_pet" value="No">
-                            <span class="radio-label">No</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="age_range" value="Young"><span class="radio-label">Young</span></label>
+                        <label class="radio-option"><input type="radio" name="age_range" value="Adult"><span class="radio-label">Adult</span></label>
+                        <label class="radio-option"><input type="radio" name="age_range" value="Senior"><span class="radio-label">Senior</span></label>
                     </div>
                 </div>
-
-                <!-- Question 5: Preferred Age -->
                 <div class="question-card" data-question="5">
-                    <h3 class="question-title">5. What age range do you prefer for your pet?</h3>
+                    <h3 class="question-title">5. Do you have a preference for the size of your pet?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="age_range" value="Young">
-                            <span class="radio-label">Young</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="age_range" value="Adult">
-                            <span class="radio-label">Adult</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="age_range" value="Senior">
-                            <span class="radio-label">Senior</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="size" value="Small"><span class="radio-label">Small</span></label>
+                        <label class="radio-option"><input type="radio" name="size" value="Medium"><span class="radio-label">Medium</span></label>
+                        <label class="radio-option"><input type="radio" name="size" value="Large"><span class="radio-label">Large</span></label>
                     </div>
                 </div>
-
-                <!-- Question 6: Size Preference -->
                 <div class="question-card" data-question="6">
-                    <h3 class="question-title">6. Do you have a preference for the size of your pet?</h3>
+                    <h3 class="question-title">6. Do you have a preference for your pet's gender?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="size" value="Small">
-                            <span class="radio-label">Small</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="size" value="Medium">
-                            <span class="radio-label">Medium</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="size" value="Large">
-                            <span class="radio-label">Large</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="gender" value="Male"><span class="radio-label">Male</span></label>
+                        <label class="radio-option"><input type="radio" name="gender" value="Female"><span class="radio-label">Female</span></label>
+                        <label class="radio-option"><input type="radio" name="gender" value="No preference"><span class="radio-label">No preference</span></label>
                     </div>
                 </div>
-
-                <!-- Question 7: Gender Preference -->
                 <div class="question-card" data-question="7">
-                    <h3 class="question-title">7. Do you have a preference for your pet's gender?</h3>
+                    <h3 class="question-title">7. How much grooming are you willing to do?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="gender" value="Male">
-                            <span class="radio-label">Male</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="gender" value="Female">
-                            <span class="radio-label">Female</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="gender" value="No preference">
-                            <span class="radio-label">No preference</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="grooming" value="Very Little"><span class="radio-label">Very Little</span></label>
+                        <label class="radio-option"><input type="radio" name="grooming" value="Moderate"><span class="radio-label">Moderate</span></label>
+                        <label class="radio-option"><input type="radio" name="grooming" value="High"><span class="radio-label">High</span></label>
                     </div>
                 </div>
-
-                <!-- Question 8: Grooming -->
                 <div class="question-card" data-question="8">
-                    <h3 class="question-title">8. How much grooming are you willing to do?</h3>
+                    <h3 class="question-title">8. Are you okay with your pet consuming a meat-based diet?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="grooming" value="Very Little">
-                            <span class="radio-label">Very Little</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="grooming" value="Moderate">
-                            <span class="radio-label">Moderate</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="grooming" value="High">
-                            <span class="radio-label">High</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="meat_diet" value="Yes"><span class="radio-label">Yes</span></label>
+                        <label class="radio-option"><input type="radio" name="meat_diet" value="No"><span class="radio-label">No</span></label>
                     </div>
                 </div>
-
-                <!-- Question 9: Meat-based Diet -->
                 <div class="question-card" data-question="9">
-                    <h3 class="question-title">9. Do you follow a meat-based diet?</h3>
+                    <h3 class="question-title">9. How important is it that your potential pet is already vaccinated?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="meat_diet" value="Yes">
-                            <span class="radio-label">Yes</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="meat_diet" value="No">
-                            <span class="radio-label">No</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="vaccination" value="Very important"><span class="radio-label">Very important</span></label>
+                        <label class="radio-option"><input type="radio" name="vaccination" value="Somewhat important"><span class="radio-label">Somewhat important</span></label>
+                        <label class="radio-option"><input type="radio" name="vaccination" value="Not important"><span class="radio-label">Not important</span></label>
                     </div>
                 </div>
-
-                <!-- Question 10: Vaccination Importance -->
                 <div class="question-card" data-question="10">
-                    <h3 class="question-title">10. How important is it that your potential pet is already vaccinated?</h3>
+                    <h3 class="question-title">10. Are you open to adopting a pet with a known health condition?</h3>
                     <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="vaccination" value="Very important">
-                            <span class="radio-label">Very important</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="vaccination" value="Somewhat important">
-                            <span class="radio-label">Somewhat important</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="vaccination" value="Not important">
-                            <span class="radio-label">Not important</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="health_condition" value="Yes"><span class="radio-label">Yes</span></label>
+                        <label class="radio-option"><input type="radio" name="health_condition" value="No"><span class="radio-label">No</span></label>
+                        <label class="radio-option"><input type="radio" name="health_condition" value="Depending on condition"><span class="radio-label">Depending on condition</span></label>
                     </div>
                 </div>
 
-                <!-- Question 11: Health Condition -->
-                <div class="question-card" data-question="11">
-                    <h3 class="question-title">11. Are you open to adopting a pet with a known health condition that might require ongoing care?</h3>
-                    <div class="radio-options">
-                        <label class="radio-option">
-                            <input type="radio" name="health_condition" value="Yes">
-                            <span class="radio-label">Yes</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="health_condition" value="No">
-                            <span class="radio-label">No</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="health_condition" value="Depending on condition">
-                            <span class="radio-label">Depending on condition</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Navigation Buttons -->
                 <div class="navigation-buttons">
-                    <button type="button" class="btn-nav btn-previous" id="prevBtn" disabled>
-                        ← Previous
-                    </button>
-                    <button type="button" class="btn-nav btn-next" id="nextBtn" disabled>
-                        Next →
-                    </button>
-                    <button type="submit" class="btn-nav btn-submit" id="submitBtn" style="display: none;" disabled>
-                        Get My Matches! 🎉
-                    </button>
+                    <button type="button" class="btn-nav btn-previous" id="prevBtn" disabled>Previous</button>
+                    <button type="button" class="btn-nav btn-next" id="nextBtn" disabled>Next</button>
+                    <button type="submit" class="btn-nav btn-submit" id="submitBtn" style="display: none;" disabled>Get My Matches</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Results Section -->
     <div id="resultsSection" style="display: none;">
         <div class="container">
             <div class="results-container">
                 <div class="results-header">
-                    <h2>🎉 Your Perfect Pet Matches!</h2>
+                    <h2>Your Perfect Pet Matches</h2>
                     <p>We found <span id="resultCount">0</span> pets that match your preferences</p>
-                    <button class="btn btn-secondary" onclick="retakeQuiz()" style="margin-top: 1rem;">Take Quiz Again</button>
+                    <button class="btn btn-outline" onclick="retakeQuiz()" style="margin-top: 1rem;">Take Quiz Again</button>
                 </div>
                 <div id="resultsGrid"></div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Indicator -->
     <div id="loading" style="display: none;">
-        <div class="loading">
-            <div class="spinner"></div>
-            <p>Finding your perfect matches...</p>
-        </div>
+        <div class="loading"><div class="spinner"></div><p>Finding your perfect matches...</p></div>
     </div>
 
     <!-- Adoption Modal -->
     <div id="adoptionModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🐾 Adopt <span id="modalPetName"></span></h2>
+                <h2>Adopt <span id="modalPetName"></span></h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             <form id="adoptionForm">
                 <input type="hidden" id="adopt_pet_id" name="pet_id">
                 <input type="hidden" id="adopt_pet_name" name="pet_name">
-                
-                <div class="form-group">
-                    <label for="user_name">Your Name *</label>
-                    <input type="text" id="user_name" name="user_name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="user_email">Email *</label>
-                    <input type="email" id="user_email" name="user_email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="user_phone">Phone Number *</label>
-                    <input type="tel" id="user_phone" name="user_phone" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="user_address">Address</label>
-                    <input type="text" id="user_address" name="user_address">
-                </div>
-                
-                <div class="form-group">
-                    <label for="message">Why do you want to adopt this pet?</label>
-                    <textarea id="message" name="message" rows="4" style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 0.5rem;"></textarea>
-                </div>
-                
-                <div style="text-align: center;">
-                    <button type="submit" class="btn btn-success btn-large">Submit Adoption Request</button>
-                </div>
+                <div class="form-group"><label for="user_name">Your Name *</label><input type="text" id="user_name" name="user_name" required></div>
+                <div class="form-group"><label for="user_email">Email *</label><input type="email" id="user_email" name="user_email" required></div>
+                <div class="form-group"><label for="user_phone">Phone Number *</label><input type="tel" id="user_phone" name="user_phone" required></div>
+                <div class="form-group"><label for="user_address">Address</label><input type="text" id="user_address" name="user_address"></div>
+                <div class="form-group"><label for="message">Why do you want to adopt this pet?</label><textarea id="message" name="message" rows="4" style="width:100%;padding:0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text);font-family:inherit;"></textarea></div>
+                <div style="text-align:center;"><button type="submit" class="btn btn-primary btn-large">Submit Adoption Request</button></div>
             </form>
         </div>
     </div>
 
     <script>
-        // Quiz navigation state
         let currentQuestion = 1;
-        const totalQuestions = 11;
+        const totalQuestions = 10;
         const answers = {};
-
-        // DOM elements
         const quizForm = document.getElementById('quizForm');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
@@ -499,346 +300,164 @@
         const progressBar = document.getElementById('progressBar');
         const questionCounter = document.getElementById('questionCounter');
 
-        // Initialize quiz
-        function initQuiz() {
-            updateQuestionDisplay();
-            attachRadioListeners();
-        }
+        function initQuiz() { updateQuestionDisplay(); attachRadioListeners(); }
 
-        // Attach event listeners to all radio buttons
         function attachRadioListeners() {
-            const radioButtons = document.querySelectorAll('input[type="radio"]');
-            radioButtons.forEach(radio => {
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
                 radio.addEventListener('change', function() {
-                    // Update answers object
                     answers[this.name] = this.value;
-                    
-                    // Update visual selection
                     const parent = this.closest('.radio-options');
-                    parent.querySelectorAll('.radio-option').forEach(opt => {
-                        opt.classList.remove('selected');
-                    });
+                    parent.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
                     this.closest('.radio-option').classList.add('selected');
-                    
-                    // Enable next/submit button
                     updateNavigationButtons();
                 });
             });
         }
 
-        // Update question display
         function updateQuestionDisplay() {
-            // Hide all questions
-            document.querySelectorAll('.question-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            // Show current question
-            const currentCard = document.querySelector(`.question-card[data-question="${currentQuestion}"]`);
-            if (currentCard) {
-                currentCard.classList.add('active');
-                
-                // Restore previous selection if any
-                const questionName = currentCard.querySelector('input[type="radio"]').name;
-                if (answers[questionName]) {
-                    const selectedRadio = currentCard.querySelector(`input[value="${answers[questionName]}"]`);
-                    if (selectedRadio) {
-                        selectedRadio.checked = true;
-                        selectedRadio.closest('.radio-option').classList.add('selected');
-                    }
+            document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
+            const card = document.querySelector(`.question-card[data-question="${currentQuestion}"]`);
+            if (card) {
+                card.classList.add('active');
+                const name = card.querySelector('input[type="radio"]').name;
+                if (answers[name]) {
+                    const sel = card.querySelector(`input[value="${answers[name]}"]`);
+                    if (sel) { sel.checked = true; sel.closest('.radio-option').classList.add('selected'); }
                 }
             }
-            
-            // Update progress bar
-            const progress = (currentQuestion / totalQuestions) * 100;
-            progressBar.style.width = progress + '%';
-            
-            // Update counter
+            progressBar.style.width = ((currentQuestion / totalQuestions) * 100) + '%';
             questionCounter.textContent = `Question ${currentQuestion} of ${totalQuestions}`;
-            
-            // Update navigation buttons
             updateNavigationButtons();
         }
 
-        // Update navigation button states
         function updateNavigationButtons() {
-            // Previous button
             prevBtn.disabled = currentQuestion === 1;
-            
-            // Check if current question is answered
-            const currentCard = document.querySelector(`.question-card[data-question="${currentQuestion}"]`);
-            const questionName = currentCard.querySelector('input[type="radio"]').name;
-            const isAnswered = answers[questionName] !== undefined;
-            
-            // Next/Submit button logic
+            const card = document.querySelector(`.question-card[data-question="${currentQuestion}"]`);
+            const name = card.querySelector('input[type="radio"]').name;
+            const answered = answers[name] !== undefined;
             if (currentQuestion === totalQuestions) {
-                nextBtn.style.display = 'none';
-                submitBtn.style.display = 'flex';
-                submitBtn.disabled = !isAnswered;
+                nextBtn.style.display = 'none'; submitBtn.style.display = 'flex'; submitBtn.disabled = !answered;
             } else {
-                nextBtn.style.display = 'flex';
-                submitBtn.style.display = 'none';
-                nextBtn.disabled = !isAnswered;
+                nextBtn.style.display = 'flex'; submitBtn.style.display = 'none'; nextBtn.disabled = !answered;
             }
         }
 
-        // Previous button click
-        prevBtn.addEventListener('click', function() {
-            if (currentQuestion > 1) {
-                currentQuestion--;
-                updateQuestionDisplay();
-            }
-        });
+        prevBtn.addEventListener('click', () => { if (currentQuestion > 1) { currentQuestion--; updateQuestionDisplay(); } });
+        nextBtn.addEventListener('click', () => { if (currentQuestion < totalQuestions) { currentQuestion++; updateQuestionDisplay(); } });
 
-        // Next button click
-        nextBtn.addEventListener('click', function() {
-            if (currentQuestion < totalQuestions) {
-                currentQuestion++;
-                updateQuestionDisplay();
-            }
-        });
-
-        // Map quiz answers to API format
-        function mapAnswersToAPI(quizAnswers) {
-            // Map size
-            let sizePreference = 1; // default medium
-            if (quizAnswers.size === 'Small') sizePreference = 2;
-            else if (quizAnswers.size === 'Medium') sizePreference = 1;
-            else if (quizAnswers.size === 'Large') sizePreference = 0;
-            
-            // Map activity/energy level
-            let energyLevel = 2; // default moderate
-            if (quizAnswers.activity_level === 'Low') energyLevel = 1;
-            else if (quizAnswers.activity_level === 'Moderate') energyLevel = 2;
-            else if (quizAnswers.activity_level === 'High') energyLevel = 0;
-            
-            // Map children to has_kids
-            const hasKids = quizAnswers.children === 'Yes' || quizAnswers.children === 'Plan to have';
-            
-            // Map vaccination importance
-            const vaccinatedImportant = quizAnswers.vaccination === 'Very important' || 
-                                       quizAnswers.vaccination === 'Somewhat important';
-            
-            // Map grooming to shedding tolerance (inverse relationship)
-            let sheddingTolerance = 3;
-            if (quizAnswers.grooming === 'Very Little') sheddingTolerance = 1;
-            else if (quizAnswers.grooming === 'Moderate') sheddingTolerance = 3;
-            else if (quizAnswers.grooming === 'High') sheddingTolerance = 5;
-            
-            // Map meat diet
-            const okayWithMeatDiet = quizAnswers.meat_diet === 'Yes';
-            
-            // Map age range
-            let agePreference = 1; // default adult
-            if (quizAnswers.age_range === 'Puppy') agePreference = 0;
-            else if (quizAnswers.age_range === 'Adult') agePreference = 1;
-            else if (quizAnswers.age_range === 'Senior') agePreference = 2;
-            
-            return {
-                size_preference: sizePreference,
-                energy_level: energyLevel,
-                has_kids: hasKids,
-                vaccinated_important: vaccinatedImportant,
-                shedding_tolerance: sheddingTolerance,
-                okay_with_meat_diet: okayWithMeatDiet,
-                age_preference: agePreference
+        function mapAnswersToAPI(q) {
+            let size = 1; if (q.size==='Small') size=2; else if (q.size==='Large') size=0;
+            let energy = 2; if (q.activity_level==='Low') energy=1; else if (q.activity_level==='High') energy=0;
+            let age = 1; if (q.age_range==='Young') age=0; else if (q.age_range==='Senior') age=2;
+            let shed = 3; if (q.grooming==='Very Little') shed=1; else if (q.grooming==='High') shed=5;
+            // Health: Yes (open)=0, No (no issues)=1, Depends=2
+            let health = 2; if (q.health_condition==='Yes') health=0; else if (q.health_condition==='No') health=1;
+            const mapped = {
+                size_preference: size, energy_level: energy,
+                has_kids: q.children==='Yes'||q.children==='Plan to have',
+                vaccinated_important: q.vaccination!=='Not important',
+                shedding_tolerance: shed,
+                okay_with_meat_diet: q.meat_diet==='Yes',
+                age_preference: age,
+                home_type: q.home_type || '',
+                health_preference: health
             };
+            // Gender preference (hard filter)
+            if (q.gender && q.gender !== 'No preference') {
+                mapped.gender_preference = q.gender;
+            }
+            return mapped;
         }
 
-        // Handle quiz form submission
         quizForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            // Show loading
             document.querySelector('.quiz-container').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
             document.getElementById('resultsSection').style.display = 'none';
-            
-            // Scroll to loading
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // Map answers to API format
-            const apiAnswers = mapAnswersToAPI(answers);
-            
+            window.scrollTo({top:0,behavior:'smooth'});
             try {
-                // Call API
-                const response = await fetch('/api/recommend/quiz', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'include',
-                    body: JSON.stringify({ answers: apiAnswers, top_k: 5 })
-                });
-                
-                const data = await response.json();
-                
-                // Hide loading
+                const r = await fetch('/api/recommend/quiz', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify({answers:mapAnswersToAPI(answers),top_k:5}) });
+                const data = await r.json();
                 document.getElementById('loading').style.display = 'none';
-                
-                if (data.ok) {
-                    displayResults(data.recommendations);
-                } else {
-                    alert('Error: ' + data.message);
-                    document.querySelector('.quiz-container').style.display = 'block';
-                }
-            } catch (error) {
-                document.getElementById('loading').style.display = 'none';
-                alert('Error: ' + error.message);
-                document.querySelector('.quiz-container').style.display = 'block';
-            }
+                if (data.ok) displayResults(data.recommendations);
+                else { alert('Error: '+data.message); document.querySelector('.quiz-container').style.display='block'; }
+            } catch(err) { document.getElementById('loading').style.display='none'; alert('Error: '+err.message); document.querySelector('.quiz-container').style.display='block'; }
         });
 
         function displayResults(pets) {
-            const resultsGrid = document.getElementById('resultsGrid');
-            const resultCount = document.getElementById('resultCount');
-            
-            resultCount.textContent = pets.length;
-            resultsGrid.innerHTML = '';
-            
-            if (pets.length === 0) {
-                resultsGrid.innerHTML = '<p style="text-align: center; color: var(--gray);">No pets found matching your criteria. Please try adjusting your preferences.</p>';
-            } else {
-                pets.forEach(pet => {
-                    const petCard = createPetCard(pet);
-                    resultsGrid.innerHTML += petCard;
-                });
-            }
-            
+            const grid = document.getElementById('resultsGrid');
+            document.getElementById('resultCount').textContent = pets.length;
+            grid.innerHTML = '';
+            grid.className = 'pet-cards-grid';
+            if (!pets.length) { grid.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">No pets found matching your criteria.</p>'; }
+            else { pets.forEach(pet => { grid.innerHTML += createPetCard(pet); }); }
             document.getElementById('resultsSection').style.display = 'block';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({top:0,behavior:'smooth'});
+        }
+
+        function getPetEmoji(type) {
+            const map = { Dog: '\uD83D\uDC36', Cat: '\uD83D\uDC31', Bird: '\uD83D\uDC26', Rabbit: '\uD83D\uDC30' };
+            return map[type] || '\uD83D\uDC3E';
         }
 
         function createPetCard(pet) {
-            const imageUrl = pet.image_url || `https://source.unsplash.com/400x400/?${pet.type.toLowerCase()}&sig=${pet.id}`;
-            const petTypeIcon = {'Dog': '🐕', 'Cat': '🐈', 'Bird': '🦜', 'Rabbit': '🐰'}[pet.type] || '🐾';
-            
-            return `
-                <div class="pet-card-with-image">
-                    <!-- Pet Image -->
-                    <div class="pet-image-container">
-                        <img 
-                            src="${imageUrl}" 
-                            alt="${pet.name} - ${pet.breed}" 
-                            class="pet-image"
-                            onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'pet-image-error\\'><div class=\\'error-icon\\'>${petTypeIcon}</div><div class=\\'error-text\\'>${pet.name}</div></div>';"
-                            loading="lazy"
-                        >
-                        ${pet.days_in_shelter < 30 ? '<div class="image-badge badge-new">🆕 New Arrival</div>' : ''}
+            const hasImage = pet.image_url && pet.image_url.length > 0;
+            const avatarHtml = hasImage
+                ? `<img src="${pet.image_url}" alt="${pet.name}" class="pet-avatar" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=\\'pet-avatar-placeholder\\'>${getPetEmoji(pet.type)}</div>';">`
+                : `<div class="pet-avatar-placeholder">${getPetEmoji(pet.type)}</div>`;
+            return `<div class="pet-card-with-image">
+                <div class="pet-card-top">
+                    <div class="pet-type-label">${pet.type}</div>
+                    <div class="pet-name">${pet.name}</div>
+                    <div class="pet-breed-line">${pet.breed || pet.type} · ${pet.color}</div>
+
+                    <div class="pet-avatar-wrapper">${avatarHtml}</div>
+                </div>
+                <div class="pet-card-body">
+                    <div class="match-score-pill">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        ${pet.match_score}% Match
                     </div>
-                    
-                    <!-- Pet Content -->
-                    <div class="pet-card-content">
-                        <div class="pet-header-with-image">
-                            <div class="pet-title-with-image">
-                                <h3>${pet.name}</h3>
-                                <div class="pet-breed">
-                                    <span>${petTypeIcon}</span>
-                                    <span>${pet.type} • ${pet.breed}</span>
-                                </div>
-                            </div>
-                            <div class="match-score-large">
-                                <span class="match-percentage-large">${pet.match_score}%</span>
-                                <span class="match-label-large">Match</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Pet Details -->
-                        <div class="pet-details-grid">
-                            <div class="detail-item-with-icon">
-                                <div class="detail-icon">🎂</div>
-                                <div class="detail-label-with-icon">Age</div>
-                                <div class="detail-value-with-icon">${pet.age_months} months</div>
-                            </div>
-                            <div class="detail-item-with-icon">
-                                <div class="detail-icon">📏</div>
-                                <div class="detail-label-with-icon">Size</div>
-                                <div class="detail-value-with-icon">${pet.size}</div>
-                            </div>
-                            <div class="detail-item-with-icon">
-                                <div class="detail-icon">${pet.gender === 'Male' ? '♂️' : '♀️'}</div>
-                                <div class="detail-label-with-icon">Gender</div>
-                                <div class="detail-value-with-icon">${pet.gender}</div>
-                            </div>
-                            <div class="detail-item-with-icon">
-                                <div class="detail-icon">🎨</div>
-                                <div class="detail-label-with-icon">Color</div>
-                                <div class="detail-value-with-icon">${pet.color}</div>
-                            </div>
-                            <div class="detail-item-with-icon">
-                                <div class="detail-icon">⚖️</div>
-                                <div class="detail-label-with-icon">Weight</div>
-                                <div class="detail-value-with-icon">${pet.weight_kg} kg</div>
-                            </div>
-                            <div class="detail-item-with-icon">
-                                <div class="detail-icon">⚡</div>
-                                <div class="detail-label-with-icon">Energy</div>
-                                <div class="detail-value-with-icon">${pet.energy_level}</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Description -->
-                        <div class="pet-description-with-image">
-                            💭 "${pet.description}"
-                        </div>
-                        
-                        <!-- Match Reason -->
-                        <div class="match-reason-with-image">
-                            <strong>Why Perfect for You:</strong> ${pet.match_reason}
-                        </div>
-                        
-                        <!-- Tags -->
-                        <div class="pet-tags">
-                            ${pet.vaccinated ? '<span class="pet-tag tag-vaccinated">💉 Vaccinated</span>' : ''}
-                            ${pet.kid_friendly ? '<span class="pet-tag tag-kid-friendly">👶 Kid Friendly</span>' : ''}
-                            <span class="pet-tag tag-health">💚 ${pet.health_condition} Health</span>
-                            <span class="pet-tag tag-shelter">🏠 ${pet.days_in_shelter} days in shelter</span>
-                        </div>
-                        
-                        <!-- Actions -->
-                        <div class="pet-actions-with-image">
-                            <button class="btn-adopt" onclick="openAdoptionModal(${pet.id}, '${pet.name}', '${pet.type}')">
-                                💚 Adopt ${pet.name}
-                            </button>
-                            <button class="btn-details" onclick="viewPetDetails(${pet.id})">
-                                📋 View Full Profile
-                            </button>
-                            <button class="btn-favorite" onclick="toggleFavorite(${pet.id})" title="Add to favorites">
-                                ❤️
-                            </button>
-                        </div>
+                    <div class="pet-details-chips">
+                        <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${pet.age_months} mo</span>
+                        <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c-4.97 0-9-2.24-9-5v-6c0-2.76 4.03-5 9-5s9 2.24 9 5v6c0 2.76-4.03 5-9 5z"/></svg>${pet.size}</span>
+                        <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${pet.gender}</span>
+                        <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>${pet.energy_level}</span>
+                        <span class="pet-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>${pet.weight_kg} kg</span>
+                    </div>
+                    <div class="pet-description-with-image">"${pet.description}"</div>
+                    <div class="match-reason-with-image"><strong>Why this pet suits you:</strong> ${pet.match_reason}</div>
+                    <div class="pet-tags">
+                        ${pet.vaccinated ? '<span class="pet-tag tag-vaccinated">✓ Vaccinated</span>' : ''}
+                        ${pet.kid_friendly ? '<span class="pet-tag tag-kid-friendly">♥ Kid Friendly</span>' : ''}
+                        <span class="pet-tag tag-health">${pet.health_condition} Health</span>
+                        <span class="pet-tag tag-shelter">${pet.days_in_shelter} days in shelter</span>
+                    </div>
+                    <div class="pet-card-actions">
+                        <button class="btn-adopt" onclick="openAdoptionModal(${pet.id},'${pet.name}','${pet.type}')">Adopt</button>
+                        <button class="btn-details" onclick="viewPetDetails(${pet.id})">View Profile</button>
+                        <button class="btn-favorite" onclick="toggleFavorite(${pet.id})" title="Add to favorites">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </button>
                     </div>
                 </div>
-            `;
+            </div>`;
         }
-        
+
         function retakeQuiz() {
-            // Reset quiz state
             currentQuestion = 1;
-            Object.keys(answers).forEach(key => delete answers[key]);
-            
-            // Uncheck all radio buttons
-            document.querySelectorAll('input[type="radio"]').forEach(radio => {
-                radio.checked = false;
-            });
-            
-            // Remove all selected classes
-            document.querySelectorAll('.radio-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            
-            // Hide results and show quiz
+            Object.keys(answers).forEach(k => delete answers[k]);
+            document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+            document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
             document.getElementById('resultsSection').style.display = 'none';
             document.querySelector('.quiz-container').style.display = 'block';
-            
-            // Reset display
             updateQuestionDisplay();
-            
-            // Scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({top:0,behavior:'smooth'});
         }
-        
+
         function toggleFavorite(petId) {
-            // TODO: Implement favorite functionality
-            alert('Favorite feature coming soon!');
+            fetch(`/api/favorites/${petId}`, { method:'POST', credentials:'include' })
+            .then(r=>r.json()).then(d=>{ if(d.ok) { const btn=event.target.closest('.btn-favorite'); btn.classList.toggle('favorited'); } }).catch(()=>{});
         }
 
         function openAdoptionModal(petId, petName, petType) {
@@ -847,77 +466,31 @@
             document.getElementById('modalPetName').textContent = petName;
             document.getElementById('adoptionModal').classList.add('active');
         }
+        function closeModal() { document.getElementById('adoptionModal').classList.remove('active'); }
+        function viewPetDetails(petId) { window.location.href = `pet-details.html?id=${petId}`; }
 
-        function closeModal() {
-            document.getElementById('adoptionModal').classList.remove('active');
-        }
-
-        function viewPetDetails(petId) {
-            window.location.href = `pet-details.html?id=${petId}`;
-        }
-
-        // Handle adoption form submission
         document.getElementById('adoptionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const adoptionData = {
-                pet_id: parseInt(formData.get('pet_id')),
-                pet_name: formData.get('pet_name'),
-                user_name: formData.get('user_name'),
-                user_email: formData.get('user_email'),
-                user_phone: formData.get('user_phone'),
-                user_address: formData.get('user_address'),
-                message: formData.get('message')
-            };
-            
+            const fd = new FormData(e.target);
             try {
-                const response = await fetch('/api/adopt', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'include',
-                    body: JSON.stringify(adoptionData)
+                const r = await fetch('/api/adopt', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+                    body:JSON.stringify({pet_id:parseInt(fd.get('pet_id')),pet_name:fd.get('pet_name'),user_name:fd.get('user_name'),user_email:fd.get('user_email'),user_phone:fd.get('user_phone'),user_address:fd.get('user_address'),message:fd.get('message')})
                 });
-                
-                const data = await response.json();
-                
-                if (data.ok) {
-                    alert('🎉 Adoption request submitted successfully! We will contact you soon.');
-                    closeModal();
-                    e.target.reset();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
+                const data = await r.json();
+                if (data.ok) { alert('Adoption request submitted successfully!'); closeModal(); e.target.reset(); }
+                else { alert('Error: '+data.message); }
+            } catch(err) { alert('Error: '+err.message); }
         });
 
-        // Close modal on outside click
-        document.getElementById('adoptionModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
+        document.getElementById('adoptionModal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
 
-        // Logout function
         async function logout() {
-            try {
-                await fetch('/api/logout', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                window.location.href = '/login';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                window.location.href = '/login';
-            }
+            try { await fetch('/api/logout',{method:'POST',credentials:'include'}); } catch {}
+            window.location.href='/';
         }
-
-        // Initialize quiz on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initQuiz();
-        });
+        function toggleMenu() { document.getElementById('navMenu').classList.toggle('active'); document.querySelector('.hamburger').classList.toggle('active'); }
+        window.addEventListener('scroll', () => { document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20); });
+        document.addEventListener('DOMContentLoaded', initQuiz);
     </script>
 </body>
 </html>
