@@ -1,8 +1,24 @@
 venv/
+.venv/
 instance/
 model/
+.env
 
 __pycache__/
-# SBERT dataset (too large for git)
-dataset/sbert_refined_data_with_breed_characteristics_gender_full_enhanced.csv
+# Uploaded pet images
+uploads/
 
+# Dataset (training CSVs - too large for git)
+dataset/
+
+# Pet image dataset
+petimage/
+
+# Archived old scripts
+_archive/
+
+# Generated evaluation outputs
+evaluation_results/
+
+# Jupyter notebooks
+*.ipynb
