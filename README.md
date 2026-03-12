@@ -1,4 +1,4 @@
-# Pet Adoption Recommendation System
+# Pet Recommendation System
 
 A machine learning based pet recommendation system that matches users with suitable pets using two ML approaches - a structured quiz powered by K-Nearest Neighbors (KNN) and a natural language search powered by Sentence-BERT (SBERT). The system is deployed as a web application with user authentication and an admin panel.
 
