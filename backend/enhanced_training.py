@@ -6,6 +6,7 @@ Enhanced Pet Recommendation System Training
 """
 
 import os
+import sys
 import pandas as pd
 import numpy as np
 import joblib
@@ -17,8 +18,13 @@ from sentence_transformers import SentenceTransformer
 import warnings
 warnings.filterwarnings("ignore")
 
+# Add parent directory to path so we can import pet_image_mapper
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from pet_image_mapper import get_pet_image_url
+
 # Paths
-CSV_PATH = "dataset/final_refined_pet.csv"  # KNN training data with all fields
+CSV_PATH = "dataset/Pet_Recommendation_System.csv"  # KNN training data (preprocessed/normalized)
+CSV_PATH_ORIGINAL = "dataset/fully_updated_pet_dataset.csv"  # Original data with real values for display
 CSV_PATH_SBERT = "dataset/sbert_refined_data_with_breed_characteristics_gender_full_enhanced.csv"  # SBERT with enhanced characteristics
 MODEL_DIR = "model"
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -74,85 +80,57 @@ ENERGY_MAPPING = {
     2: "Moderate"
 }
 
-# Pet name lists for each type
-DOG_NAMES = ["Max", "Bella", "Charlie", "Luna", "Cooper", "Daisy", "Rocky", "Molly", 
-             "Buddy", "Sadie", "Duke", "Maggie", "Bear", "Lucy", "Tucker", "Bailey",
-             "Jack", "Sophie", "Toby", "Chloe", "Zeus", "Lily", "Oliver", "Penny",
-             "Bentley", "Zoe", "Winston", "Lola", "Diesel", "Stella"]
+def generate_pet_label(breed, pet_id):
+    """Generate a pet label using breed + dataset PetID, e.g. 'German Shepherd #42'"""
+    return f"{breed} #{pet_id}"
 
-CAT_NAMES = ["Whiskers", "Mittens", "Shadow", "Luna", "Oliver", "Bella", "Simba", "Chloe",
-             "Leo", "Nala", "Milo", "Cleo", "Felix", "Lucy", "Tiger", "Princess",
-             "Smokey", "Angel", "Jasper", "Kitty", "Oscar", "Misty", "Salem", "Patches",
-             "Ginger", "Boots", "Buddy", "Socks", "Pumpkin", "Fluffy"]
-
-BIRD_NAMES = ["Tweety", "Rio", "Kiwi", "Sunny", "Blu", "Polly", "Chirpy", "Sky",
-              "Mango", "Coco", "Peach", "Charlie", "Buddy", "Angel", "Rainbow",
-              "Skittles", "Peanut", "Cookie", "Daisy", "Lucky", "Happy", "Pepper",
-              "Lemon", "Berry", "Sweetie", "Echo", "Ruby", "Sapphire"]
-
-RABBIT_NAMES = ["Thumper", "Clover", "Cottontail", "Hoppy", "Fluffy", "Snowball", 
-                "Patches", "Oreo", "Bunny", "Cotton", "Marshmallow", "Nibbles",
-                "Cinnamon", "Hazel", "Willow", "Daisy", "Flopsy", "Peter",
-                "Honey", "Maple", "Smokey", "Pepper", "Sugar", "Butterscotch"]
-
-def generate_pet_name(pet_type, pet_id):
-    """Generate consistent pet name based on type and ID"""
-    if pet_type == 2:  # Dog
-        return DOG_NAMES[pet_id % len(DOG_NAMES)] + str((pet_id // len(DOG_NAMES)) if pet_id >= len(DOG_NAMES) else "")
-    elif pet_type == 1:  # Cat
-        return CAT_NAMES[pet_id % len(CAT_NAMES)] + str((pet_id // len(CAT_NAMES)) if pet_id >= len(CAT_NAMES) else "")
-    elif pet_type == 0:  # Bird
-        return BIRD_NAMES[pet_id % len(BIRD_NAMES)] + str((pet_id // len(BIRD_NAMES)) if pet_id >= len(BIRD_NAMES) else "")
-    elif pet_type == 3:  # Rabbit
-        return RABBIT_NAMES[pet_id % len(RABBIT_NAMES)] + str((pet_id // len(RABBIT_NAMES)) if pet_id >= len(RABBIT_NAMES) else "")
-    return "Pet" + str(pet_id)
-
-def generate_pet_image(pet_type, pet_id, seed):
-    """Generate pet image URL using placeholder service"""
-    # Using Lorem Picsum with different seeds for variety
-    # You can replace with actual image URLs or upload system
-    
-    if pet_type == 2:  # Dog
-        # Use Unsplash Source for dogs (search term: dog)
-        return f"https://source.unsplash.com/400x400/?dog,puppy&sig={seed}"
-    elif pet_type == 1:  # Cat
-        # Use Unsplash Source for cats (search term: cat)
-        return f"https://source.unsplash.com/400x400/?cat,kitten&sig={seed}"
-    elif pet_type == 0:  # Bird
-        # Use Unsplash Source for birds (search term: bird)
-        return f"https://source.unsplash.com/400x400/?bird,parrot&sig={seed}"
-    elif pet_type == 3:  # Rabbit
-        # Use Unsplash Source for rabbits (search term: rabbit)
-        return f"https://source.unsplash.com/400x400/?rabbit,bunny&sig={seed}"
-    
-    # Fallback
-    return f"https://source.unsplash.com/400x400/?pet,animal&sig={seed}"
+def generate_pet_image(breed_name, color, size, age_months, pet_id):
+    """Generate pet image URL from local petimage folder using the image mapper."""
+    url = get_pet_image_url(breed_name, color, size, age_months, pet_id)
+    return url  # may be "" if no image found for this breed
 
 def denormalize_age(normalized_age):
-    """Convert normalized age back to approximate months"""
-    # Based on typical normalization: (x - mean) / std
-    # Approximate: mean~24, std~15 months
-    age = int(normalized_age * 15 + 24)
+    """Convert normalized age back to months"""
+    # Exact StandardScaler params computed from fully_updated_pet_dataset.csv
+    # mean=81.5571788413, std=57.8377029211
+    age = int(normalized_age * 57.8377 + 81.5572)
     return max(1, age)
 
 def denormalize_weight(normalized_weight):
-    """Convert normalized weight back to approximate kg"""
-    # Approximate: mean~15kg, std~10kg
-    weight = normalized_weight * 10 + 15
-    return round(max(0.5, weight), 1)
+    """Convert normalized weight back to kg"""
+    # Exact StandardScaler params computed from fully_updated_pet_dataset.csv
+    # mean=6.8641311952, std=8.7905346871
+    weight = normalized_weight * 8.7905 + 6.8641
+    return round(max(0.01, weight), 2)
 
 def denormalize_days(normalized_days):
     """Convert normalized shelter days to actual days"""
-    days = int(normalized_days * 30 + 45)
+    # Exact StandardScaler params computed from fully_updated_pet_dataset.csv
+    # mean=43.5355163728, std=25.5978957150
+    days = int(normalized_days * 25.5979 + 43.5355)
     return max(0, days)
 
 def load_and_prepare_dataset():
-    """Load dataset and create pets database with readable info"""
-    print("Loading dataset from:", CSV_PATH)
+    """
+    Load preprocessed dataset for KNN training + original dataset for display.
+    - Pet_Recommendation_System.csv → normalized features for KNN/SBERT
+    - fully_updated_pet_dataset.csv → real values (age, weight, etc.) shown to user
+    """
+    print("Loading preprocessed dataset from:", CSV_PATH)
     df = pd.read_csv(CSV_PATH)
     
     print(f"Dataset loaded: {len(df)} pets")
     print(f"Columns: {list(df.columns)}")
+    
+    # Load ORIGINAL dataset for real display values
+    print("Loading original dataset from:", CSV_PATH_ORIGINAL)
+    original_df = pd.read_csv(CSV_PATH_ORIGINAL)
+    
+    # Build lookup: PetID → original row (real age, weight, days, size, etc.)
+    original_lookup = {}
+    for _, row in original_df.iterrows():
+        original_lookup[int(row['PetID'])] = row
+    print(f"✓ Loaded {len(original_lookup)} pets from original dataset")
     
     # Load enhanced characteristics dataset
     try:
@@ -181,12 +159,35 @@ def load_and_prepare_dataset():
         breed_code = int(row['Breed'])
         pet_id = int(row['PetID'])
         
-        # Generate unique name based on pet type
-        pet_name = generate_pet_name(pet_type, pet_counter[pet_type])
+        # Get the ORIGINAL row for this pet (real values for display)
+        orig = original_lookup.get(pet_id)
+        
+        # Generate label using actual PetID from dataset: "German Shepherd #42"
+        breed_name = BREED_MAPPING[breed_code]
+        pet_name = generate_pet_label(breed_name, pet_id)
         pet_counter[pet_type] += 1
         
-        # Generate unique seed for consistent images
-        image_seed = pet_id * 1000 + pet_type * 100
+        # Use REAL values from original dataset for display
+        # Fall back to denormalized values only if original not found
+        if orig is not None:
+            real_age = int(orig['AgeMonths'])
+            real_weight = round(float(orig['WeightKg']), 2)
+            real_days = int(orig['TimeInShelterDays'])
+            real_size = str(orig['Size'])
+            real_gender = 'Female' if str(orig['Gender']).strip().upper() in ('F', 'FEMALE') else 'Male'
+            real_color = str(orig['Color']).strip().title()
+            real_energy = str(orig.get('Energy level', orig.get('EnergyLevel', ''))).strip().capitalize()
+            real_food = str(orig['FoodPreference'])
+        else:
+            # Fallback: denormalize from preprocessed data
+            real_age = denormalize_age(row['AgeMonths'])
+            real_weight = denormalize_weight(row['WeightKg'])
+            real_days = denormalize_days(row['TimeInShelterDays'])
+            real_size = SIZE_MAPPING[int(row['Size'])]
+            real_gender = GENDER_MAPPING[int(row['Gender'])]
+            real_color = COLOR_MAPPING[int(row['Color'])]
+            real_energy = ENERGY_MAPPING[int(row['EnergyLevel'])]
+            real_food = row['FoodPreference']
         
         pet_info = {
             'id': pet_id,
@@ -194,27 +195,27 @@ def load_and_prepare_dataset():
             'name': pet_name,
             'type': PET_TYPE_MAPPING[pet_type],
             'breed': BREED_MAPPING[breed_code],
-            'age_months': denormalize_age(row['AgeMonths']),
-            'color': COLOR_MAPPING[int(row['Color'])],
-            'size': SIZE_MAPPING[int(row['Size'])],
-            'weight_kg': denormalize_weight(row['WeightKg']),
+            'age_months': real_age,
+            'color': real_color,
+            'size': real_size,
+            'weight_kg': real_weight,
             'vaccinated': bool(row['Vaccinated']),
             'health_condition': "Excellent" if row['HealthCondition'] == 0 else "Good",
-            'days_in_shelter': denormalize_days(row['TimeInShelterDays']),
+            'days_in_shelter': real_days,
             'has_previous_owner': bool(row['PreviousOwner']),
-            'gender': GENDER_MAPPING[int(row['Gender'])],
+            'gender': real_gender,
             'description': row['pet_details'],
             'shedding_level': int(row['shedding']),
-            'food_preference': row['FoodPreference'],
+            'food_preference': real_food,
             'meat_consumption': bool(row['MeatConsumption']),
             'kid_friendly': bool(row['kid_friendliness']),
-            'energy_level': ENERGY_MAPPING[int(row['EnergyLevel'])],
-            'image_url': generate_pet_image(pet_type, pet_id, image_seed),
+            'energy_level': real_energy,
+            'image_url': generate_pet_image(breed_name, real_color, real_size, real_age, pet_id),
             # Add enhanced physical characteristics if available
             'pet_characteristics': enhanced_chars.get(pet_id, ""),
             # Add pet_details from SBERT dataset (personality, behavior traits)
-            'pet_details': pet_details_map.get(pet_id, row['pet_details']),  # Use SBERT details if available, else use KNN details
-            # Keep raw features for KNN matching
+            'pet_details': pet_details_map.get(pet_id, row['pet_details']),
+            # Keep raw features for KNN matching (normalized values)
             'raw_features': {
                 'PetType': pet_type,
                 'Breed': breed_code,
@@ -248,8 +249,10 @@ def train_knn_model(df):
     print("="*50)
     
     # Features to use for matching (user preferences)
+    # 9 features: all map to quiz questions (directly or indirectly)
     feature_columns = ['Size', 'EnergyLevel', 'kid_friendliness', 'Vaccinated',
-                      'shedding', 'MeatConsumption', 'AgeMonths', 'WeightKg']
+                      'shedding', 'MeatConsumption', 'AgeMonths', 'WeightKg',
+                      'HealthCondition']
     
     X = df[feature_columns].values.astype(float)
     y = df.index.values  # Use dataframe index as target
@@ -261,8 +264,8 @@ def train_knn_model(df):
     X_scaled = scaler.fit_transform(X)
     
     # Train KNN
-    # Use more neighbors for better recommendations
-    knn = KNeighborsClassifier(n_neighbors=15, weights="distance", metric='euclidean')
+    # Optimal k=5 determined by Elbow Method analysis (best RMSE, odd number)
+    knn = KNeighborsClassifier(n_neighbors=5, weights="distance", metric='euclidean')
     knn.fit(X_scaled, y)
     
     # Save model and components
@@ -303,28 +306,77 @@ def train_sbert_model(pets_database):
     print("Loading SBERT model: all-MiniLM-L6-v2")
     sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
     
-    # Create comprehensive text descriptions
+    # Create comprehensive text descriptions using real values from original dataset
     pet_texts = []
     for pet in pets_database:
+        pet_id = pet['id']
+        
         # Build rich description for semantic search
-        text = f"{pet['type']} {pet['breed']} named {pet['name']}. "
+        text = f"{pet['type']} {pet['breed']}. "
         text += f"{pet['gender']} {pet['size'].lower()} size, {pet['color'].lower()} color. "
         text += f"{pet['age_months']} months old, weighs {pet['weight_kg']}kg. "
         text += f"Energy level: {pet['energy_level']}. "
         
+        # Diet info (important for search queries like "non-meat pet" or "vegetarian pet")
+        if pet.get('meat_consumption'):
+            text += "Meat-based diet. "
+        else:
+            text += "Non-meat diet, herbivore. "
+        
+        # Food details from original dataset
+        if pet.get('food_preference'):
+            text += f"Diet: {pet['food_preference']}. "
+        
+        # Kid friendliness
         if pet['kid_friendly']:
-            text += "Great with kids. "
+            text += "Great with kids, family-friendly. "
+        else:
+            text += "Not ideal for young kids. "
+        
+        # Vaccination status
         if pet['vaccinated']:
             text += "Fully vaccinated. "
-        if pet['health_condition'] == "Excellent":
-            text += "Excellent health. "
+        else:
+            text += "Not yet vaccinated. "
+        
+        # Health condition
+        health = pet.get('health_condition', 'Unknown')
+        if health == "Excellent":
+            text += "Excellent health condition. "
+        elif health == "Good":
+            text += "Good health condition. "
+        else:
+            text += f"Health condition: {health}. "
+        
+        # Previous owner
+        if pet.get('has_previous_owner'):
+            text += "Has had a previous owner, previously adopted. "
+        else:
+            text += "No previous owner, first-time adoption. "
+        
+        # Time in shelter
+        days = pet.get('days_in_shelter', 0)
+        if days <= 10:
+            text += f"Recently arrived at shelter, {days} days. "
+        elif days <= 30:
+            text += f"Been in shelter for {days} days. "
+        else:
+            text += f"Long-term shelter resident, {days} days in shelter. "
+        
+        # Shedding info (all levels)
+        shed = pet.get('shedding_level', 0)
+        shedding_desc = {0: "No shedding", 1: "Very low shedding", 2: "Low shedding", 
+                         3: "Moderate shedding", 4: "High shedding", 5: "Heavy shedding"}
+        text += f"{shedding_desc.get(shed, 'Unknown shedding')}. "
         
         # Add personality description
         text += f"Personality: {pet['description']}. "
         
-        # Add enhanced physical characteristics if available
-        if pet.get('pet_id') in enhanced_chars:
-            text += f"Physical characteristics: {enhanced_chars[pet['pet_id']]}."
+        # Add enhanced physical characteristics if available (fixed: use 'id' not 'pet_id')
+        if pet_id in enhanced_chars:
+            text += f"Physical characteristics: {enhanced_chars[pet_id]}. "
+        elif pet.get('pet_characteristics'):
+            text += f"Physical characteristics: {pet['pet_characteristics']}. "
         
         pet_texts.append(text)
     
@@ -386,7 +438,7 @@ def main():
     for pet in pets_database:
         pet_type_code = pet['raw_features']['PetType']
         if types_shown[pet_type_code] < 2:
-            print(f"\n🐾 {pet['name']} - {pet['type']} ({pet['breed']})")
+            print(f"\n🐾 {pet['name']} — {pet['type']}")
             print(f"   {pet['gender']}, {pet['age_months']} months, {pet['size']}, {pet['color']}")
             print(f"   Energy: {pet['energy_level']} | Kid-friendly: {pet['kid_friendly']}")
             print(f"   Vaccinated: {pet['vaccinated']} | Health: {pet['health_condition']}")
