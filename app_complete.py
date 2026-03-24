@@ -3,29 +3,58 @@ Complete Pet Adoption System with Authentication
 - User registration and login
 - Database integration
 - Session management
-- Pet recommendations (KNN + SBERT)
+- Pet recommendations (KNN + SBERT) with hard-constraint filtering
 - Adoption requests
 """
 
 from flask import Flask, request, jsonify, send_from_directory, redirect, url_for, session
 from flask_cors import CORS
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from datetime import datetime
+from werkzeug.utils import secure_filename
+from datetime import datetime, date, timedelta
 from functools import wraps
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from dotenv import load_dotenv
 import os
 import sys
 import re
+import uuid
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add backend to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
 
 from database import db, User, AdoptionRequest, Favorite, AdoptedPet, HiddenPet, CustomPet
 from recommendation_engine import PetRecommendationEngine
+from pet_image_mapper import get_pet_image_url
 
 app = Flask(__name__, static_folder="frontend", static_url_path="/")
+
+# ── Pet image directory ──
+PETIMAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "petimage", "petimage")
+
+# ── Upload config ──
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads", "pets")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+ALLOWED_IMG_EXT = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB max upload
+
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pet_adoption.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# ── Gmail SMTP Configuration ──
+MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+MAIL_SENDER_NAME = "Adoptly"
+
+# ── Token serializer for email verification & password reset ──
+token_serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # Initialize extensions
 db.init_app(app)
@@ -52,6 +81,15 @@ except Exception as e:
 # Password validation regex
 PASSWORD_REGEX = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
 
+# Z-score normalization constants from the original dataset
+# (Pet_Recommendation_System.csv has z-scored AgeMonths & WeightKg; custom
+#  pets must be converted to the same z-score space before KNN matching.)
+# Computed from dataset/fully_updated_pet_dataset.csv:
+DATASET_AGE_MEAN = 81.5571788413    # months
+DATASET_AGE_STD = 57.8522771189     # months
+DATASET_WEIGHT_MEAN = 6.8641311952  # kg
+DATASET_WEIGHT_STD = 8.7927497646   # kg
+
 # Admin required decorator
 def admin_required(f):
     """Decorator to require admin privileges"""
@@ -63,6 +101,116 @@ def admin_required(f):
             return jsonify({"ok": False, "message": "Admin privileges required"}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+# ==================== EMAIL HELPERS ====================
+
+def generate_verification_token(email):
+    """Generate a signed token for email verification"""
+    return token_serializer.dumps(email, salt='email-verification')
+
+def verify_email_token(token, max_age=3600):
+    """Verify an email verification token (valid for 1 hour)"""
+    try:
+        email = token_serializer.loads(token, salt='email-verification', max_age=max_age)
+        return email
+    except (SignatureExpired, BadSignature):
+        return None
+
+def generate_reset_token(email):
+    """Generate a signed token for password reset"""
+    return token_serializer.dumps(email, salt='password-reset')
+
+def verify_reset_token(token, max_age=3600):
+    """Verify a password reset token (valid for 1 hour)"""
+    try:
+        email = token_serializer.loads(token, salt='password-reset', max_age=max_age)
+        return email
+    except (SignatureExpired, BadSignature):
+        return None
+
+def send_email(to_email, subject, html_body):
+    """Send an email via Gmail SMTP"""
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["From"] = f"{MAIL_SENDER_NAME} <{MAIL_USERNAME}>"
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(html_body, "html"))
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(MAIL_USERNAME, MAIL_PASSWORD)
+            server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
+
+        print(f"✅ Email sent to {to_email}")
+        return True
+    except Exception as e:
+        print(f"❌ Email send error: {e}")
+        return False
+
+def send_verification_email(user_email, username, token):
+    """Send email verification link"""
+    verify_url = f"{request.host_url}verify-email?token={token}"
+    html = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #f4f1ec; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="display: inline-block; background: linear-gradient(135deg, #4a7560, #7daa8e); padding: 14px; border-radius: 14px; margin-bottom: 12px;">
+                <span style="font-size: 28px; color: white;">&#128062;</span>
+            </div>
+            <h1 style="color: #2c3e36; font-size: 22px; margin: 0;">Welcome to Adoptly!</h1>
+        </div>
+        <div style="background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);">
+            <p style="color: #2c3e36; font-size: 15px; margin: 0 0 8px;">Hi <strong>{username}</strong>,</p>
+            <p style="color: #5f7268; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+                Thank you for creating an account! Please verify your email address to start finding your perfect companion.
+            </p>
+            <div style="text-align: center; margin: 24px 0;">
+                <a href="{verify_url}" style="display: inline-block; background: linear-gradient(135deg, #4a7560, #7daa8e); color: white; text-decoration: none; padding: 13px 36px; border-radius: 10px; font-weight: 700; font-size: 15px; box-shadow: 0 3px 12px rgba(125,170,142,0.3);">
+                    Verify Email Address
+                </a>
+            </div>
+            <p style="color: #8fa398; font-size: 12px; text-align: center; margin: 20px 0 0;">
+                This link expires in 1 hour. If you didn't create an account, you can ignore this email.
+            </p>
+        </div>
+        <p style="color: #8fa398; font-size: 11px; text-align: center; margin-top: 16px;">
+            &copy; Adoptly — Find your perfect companion
+        </p>
+    </div>
+    """
+    return send_email(user_email, "Verify Your Email — Adoptly", html)
+
+def send_reset_email(user_email, username, token):
+    """Send password reset link"""
+    reset_url = f"{request.host_url}reset-password?token={token}"
+    html = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #f4f1ec; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="display: inline-block; background: linear-gradient(135deg, #4a7560, #7daa8e); padding: 14px; border-radius: 14px; margin-bottom: 12px;">
+                <span style="font-size: 28px; color: white;">&#128274;</span>
+            </div>
+            <h1 style="color: #2c3e36; font-size: 22px; margin: 0;">Password Reset</h1>
+        </div>
+        <div style="background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);">
+            <p style="color: #2c3e36; font-size: 15px; margin: 0 0 8px;">Hi <strong>{username}</strong>,</p>
+            <p style="color: #5f7268; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+                We received a request to reset your password. Click the button below to set a new password.
+            </p>
+            <div style="text-align: center; margin: 24px 0;">
+                <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #4a7560, #7daa8e); color: white; text-decoration: none; padding: 13px 36px; border-radius: 10px; font-weight: 700; font-size: 15px; box-shadow: 0 3px 12px rgba(125,170,142,0.3);">
+                    Reset Password
+                </a>
+            </div>
+            <p style="color: #8fa398; font-size: 12px; text-align: center; margin: 20px 0 0;">
+                This link expires in 1 hour. If you didn't request this, you can safely ignore this email.
+            </p>
+        </div>
+        <p style="color: #8fa398; font-size: 11px; text-align: center; margin-top: 16px;">
+            &copy; Adoptly — Find your perfect companion
+        </p>
+    </div>
+    """
+    return send_email(user_email, "Reset Your Password — Adoptly", html)
 
 # Helper function to get adopted pet IDs
 def get_adopted_pet_ids():
@@ -85,12 +233,12 @@ def get_unavailable_pet_ids():
 
 @app.route("/")
 def index():
-    """Serve login page if not authenticated, else redirect based on role"""
+    """Serve landing page if not authenticated, else redirect based on role"""
     if current_user.is_authenticated:
         if current_user.is_admin:
             return redirect("/admin-choice")
         return redirect("/dashboard")
-    return send_from_directory(app.static_folder, "login.html")
+    return send_from_directory(app.static_folder, "index.html")
 
 @app.route("/login")
 def serve_login():
@@ -105,6 +253,43 @@ def serve_register():
     if current_user.is_authenticated:
         return redirect("/dashboard")
     return send_from_directory(app.static_folder, "register.html")
+
+@app.route("/forgot-password")
+def serve_forgot_password():
+    """Serve forgot password page"""
+    return send_from_directory(app.static_folder, "forgot-password.html")
+
+@app.route("/reset-password")
+def serve_reset_password():
+    """Serve reset password page"""
+    return send_from_directory(app.static_folder, "reset-password.html")
+
+@app.route("/verify-email")
+def serve_verify_email():
+    """Handle email verification link"""
+    token = request.args.get("token", "")
+    if not token:
+        return send_from_directory(app.static_folder, "verify-email-result.html")
+    
+    email = verify_email_token(token)
+    if email:
+        user = User.query.filter_by(email=email).first()
+        if user and not user.email_verified:
+            user.email_verified = True
+            db.session.commit()
+        return redirect("/verify-email-success")
+    else:
+        return redirect("/verify-email-failed")
+
+@app.route("/verify-email-success")
+def serve_verify_email_success():
+    """Serve verification success page"""
+    return send_from_directory(app.static_folder, "verify-email-result.html")
+
+@app.route("/verify-email-failed")
+def serve_verify_email_failed():
+    """Serve verification failed page"""
+    return send_from_directory(app.static_folder, "verify-email-result.html")
 
 @app.route("/dashboard")
 @login_required
@@ -136,6 +321,58 @@ def serve_admin_pets():
         return redirect("/dashboard")
     return send_from_directory(app.static_folder, "admin-pets.html")
 
+@app.route("/petimage/<path:filepath>")
+def serve_pet_image(filepath):
+    """Serve pet images from the petimage directory"""
+    return send_from_directory(PETIMAGE_DIR, filepath)
+
+@app.route("/uploads/pets/<path:filepath>")
+def serve_uploaded_pet_image(filepath):
+    """Serve admin-uploaded pet images"""
+    return send_from_directory(UPLOAD_DIR, filepath)
+
+@app.route("/api/admin/upload-pet-image", methods=["POST"])
+@admin_required
+def upload_pet_image():
+    """Upload a pet image. Returns the filename to store in the DB."""
+    if 'image' not in request.files:
+        return jsonify({"ok": False, "message": "No image file provided"}), 400
+
+    f = request.files['image']
+    if f.filename == '':
+        return jsonify({"ok": False, "message": "No file selected"}), 400
+
+    ext = os.path.splitext(f.filename)[1].lower()
+    if ext not in ALLOWED_IMG_EXT:
+        return jsonify({"ok": False, "message": f"Invalid file type. Allowed: {', '.join(ALLOWED_IMG_EXT)}"}), 400
+
+    # Generate unique filename to avoid collisions
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    save_path = os.path.join(UPLOAD_DIR, unique_name)
+    f.save(save_path)
+
+    return jsonify({
+        "ok": True,
+        "filename": unique_name,
+        "image_url": f"/uploads/pets/{unique_name}"
+    })
+
+@app.route("/api/admin/delete-pet-image", methods=["POST"])
+@admin_required
+def delete_pet_image():
+    """Delete an uploaded pet image file."""
+    data = request.json or {}
+    filename = data.get("filename", "")
+    if not filename:
+        return jsonify({"ok": False, "message": "No filename provided"}), 400
+
+    # Secure: only allow simple filenames, no path traversal
+    safe = secure_filename(filename)
+    fpath = os.path.join(UPLOAD_DIR, safe)
+    if os.path.isfile(fpath):
+        os.remove(fpath)
+    return jsonify({"ok": True})
+
 @app.route("/<path:path>")
 def serve_static(path):
     """Serve static files"""
@@ -145,7 +382,7 @@ def serve_static(path):
 
 @app.route("/api/register", methods=["POST"])
 def api_register():
-    """User registration with validation"""
+    """User registration with email verification"""
     try:
         data = request.json or {}
         
@@ -188,36 +425,55 @@ def api_register():
         if User.query.filter_by(email=email).first():
             return jsonify({"ok": False, "message": "Email already registered"}), 400
         
-        # Create new user
+        # Create new user (email not verified yet)
         user = User(
             username=username,
             email=email,
             full_name=full_name,
             phone=data.get("phone", ""),
-            address=data.get("address", "")
+            address=data.get("address", ""),
+            email_verified=False
         )
         user.set_password(password)
         
         db.session.add(user)
         db.session.commit()
         
-        return jsonify({
-            "ok": True,
-            "message": "Registration successful! Please login.",
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email
-            }
-        })
+        # Send verification email
+        token = generate_verification_token(email)
+        email_sent = send_verification_email(email, username, token)
+        
+        if email_sent:
+            return jsonify({
+                "ok": True,
+                "message": "Account created! Please check your email to verify your account.",
+                "needs_verification": True,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email
+                }
+            })
+        else:
+            return jsonify({
+                "ok": True,
+                "message": "Account created but we couldn't send the verification email. Please request a new one from the login page.",
+                "needs_verification": True,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email
+                }
+            })
     
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "message": f"Registration error: {str(e)}"}), 500
 
+
 @app.route("/api/login", methods=["POST"])
 def api_login():
-    """User login"""
+    """User login — requires verified email"""
     try:
         data = request.json or {}
         identifier = data.get("identifier", "").strip().lower()  # username or email
@@ -233,6 +489,15 @@ def api_login():
         
         if not user or not user.check_password(password):
             return jsonify({"ok": False, "message": "Invalid credentials"}), 401
+        
+        # Check if email is verified
+        if not user.email_verified:
+            return jsonify({
+                "ok": False,
+                "message": "Please verify your email before logging in. Check your inbox for the verification link.",
+                "email_not_verified": True,
+                "email": user.email
+            }), 403
         
         # Update last login
         user.last_login = datetime.utcnow()
@@ -262,6 +527,104 @@ def api_logout():
     """User logout"""
     logout_user()
     return jsonify({"ok": True, "message": "Logged out successfully"})
+
+@app.route("/api/resend-verification", methods=["POST"])
+def api_resend_verification():
+    """Resend email verification link"""
+    try:
+        data = request.json or {}
+        email = data.get("email", "").strip().lower()
+        
+        if not email:
+            return jsonify({"ok": False, "message": "Email is required"}), 400
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            # Don't reveal whether email exists
+            return jsonify({"ok": True, "message": "If an account exists with this email, a verification link has been sent."})
+        
+        if user.email_verified:
+            return jsonify({"ok": False, "message": "This email is already verified. You can log in."}), 400
+        
+        token = generate_verification_token(email)
+        send_verification_email(email, user.username, token)
+        
+        return jsonify({"ok": True, "message": "Verification email sent! Please check your inbox."})
+    
+    except Exception as e:
+        return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
+
+@app.route("/api/forgot-password", methods=["POST"])
+def api_forgot_password():
+    """Send password reset link"""
+    try:
+        data = request.json or {}
+        email = data.get("email", "").strip().lower()
+        
+        if not email:
+            return jsonify({"ok": False, "message": "Email is required"}), 400
+        
+        user = User.query.filter_by(email=email).first()
+        
+        # Always return success to prevent email enumeration
+        if not user:
+            return jsonify({"ok": True, "message": "If an account exists with this email, a password reset link has been sent."})
+        
+        token = generate_reset_token(email)
+        send_reset_email(email, user.username, token)
+        
+        return jsonify({"ok": True, "message": "If an account exists with this email, a password reset link has been sent."})
+    
+    except Exception as e:
+        return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
+
+@app.route("/api/reset-password", methods=["POST"])
+def api_reset_password():
+    """Reset password using token"""
+    try:
+        data = request.json or {}
+        token = data.get("token", "")
+        new_password = data.get("password", "")
+        
+        if not token:
+            return jsonify({"ok": False, "message": "Invalid reset link"}), 400
+        
+        if not new_password:
+            return jsonify({"ok": False, "message": "Password is required"}), 400
+        
+        # Validate password criteria
+        if len(new_password) < 8:
+            return jsonify({"ok": False, "message": "Password must be at least 8 characters"}), 400
+        if not re.search(r'[A-Z]', new_password):
+            return jsonify({"ok": False, "message": "Password must contain at least one uppercase letter"}), 400
+        if not re.search(r'[a-z]', new_password):
+            return jsonify({"ok": False, "message": "Password must contain at least one lowercase letter"}), 400
+        if not re.search(r'\d', new_password):
+            return jsonify({"ok": False, "message": "Password must contain at least one number"}), 400
+        if not re.search(r'[@$!%*?&#]', new_password):
+            return jsonify({"ok": False, "message": "Password must contain at least one special character (@$!%*?&#)"}), 400
+        
+        # Verify token
+        email = verify_reset_token(token)
+        if not email:
+            return jsonify({"ok": False, "message": "This reset link has expired or is invalid. Please request a new one."}), 400
+        
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({"ok": False, "message": "User not found"}), 404
+        
+        # Update password
+        user.set_password(new_password)
+        # Also verify email if not already done
+        if not user.email_verified:
+            user.email_verified = True
+        db.session.commit()
+        
+        return jsonify({"ok": True, "message": "Password reset successful! You can now log in with your new password."})
+    
+    except Exception as e:
+        return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
 
 @app.route("/api/user/me", methods=["GET"])
 @login_required
@@ -319,10 +682,10 @@ def recommend_from_quiz():
         top_k = data.get("top_k", 5)
         
         recommendations = engine.recommend_from_quiz(answers, top_k=top_k)
-        
-        # Filter out adopted and hidden pets
+
+        # Filter out adopted and hidden pets (use 'id' — dataset pets don't have 'pet_id')
         unavailable_pet_ids = get_unavailable_pet_ids()
-        recommendations = [pet for pet in recommendations if pet.get('pet_id') not in unavailable_pet_ids]
+        recommendations = [pet for pet in recommendations if pet.get('id') not in unavailable_pet_ids]
         
         return jsonify({
             "ok": True,
@@ -351,10 +714,10 @@ def recommend_from_text():
             return jsonify({"ok": False, "message": "Please provide a description (min 3 characters)"}), 400
         
         recommendations = engine.recommend_from_text(query, top_k=top_k, pet_type_filter=pet_type_filter)
-        
-        # Filter out adopted and hidden pets
+
+        # Filter out adopted and hidden pets (use 'id' — dataset pets don't have 'pet_id')
         unavailable_pet_ids = get_unavailable_pet_ids()
-        recommendations = [pet for pet in recommendations if pet.get('pet_id') not in unavailable_pet_ids]
+        recommendations = [pet for pet in recommendations if pet.get('id') not in unavailable_pet_ids]
         
         return jsonify({
             "ok": True,
@@ -372,7 +735,7 @@ def recommend_from_text():
 @app.route("/api/pets", methods=["GET"])
 @login_required
 def get_all_pets():
-    """Get all pets with optional filters (requires login)"""
+    """Get all pets with optional filters and pagination (requires login)"""
     if engine is None:
         return jsonify({"ok": False, "message": "Models not loaded"}), 500
     
@@ -381,7 +744,12 @@ def get_all_pets():
         size = request.args.get("size")
         kid_friendly = request.args.get("kid_friendly") == "true"
         energy_level = request.args.get("energy_level")
-        limit = int(request.args.get("limit", 50))
+        
+        # Pagination parameters
+        # Support legacy 'limit' param (used by admin panel) — disables pagination
+        legacy_limit = request.args.get("limit")
+        page = max(1, int(request.args.get("page", 1)))
+        per_page = min(100, max(1, int(request.args.get("per_page", 24))))
         
         filters = {}
         if pet_type:
@@ -393,36 +761,44 @@ def get_all_pets():
         if energy_level:
             filters['energy_level'] = energy_level
         
-        # Get pets from CSV/pickle
-        pets = engine.get_all_pets(filters)
+        # Get all pets (dataset + custom pets registered in engine)
+        all_pets = engine.get_all_pets(filters)
         
-        # Get custom pets from database
-        custom_pets_query = CustomPet.query
-        if pet_type:
-            custom_pets_query = custom_pets_query.filter_by(type=pet_type)
-        if size:
-            custom_pets_query = custom_pets_query.filter_by(size=size)
-        if kid_friendly:
-            custom_pets_query = custom_pets_query.filter_by(kid_friendly=True)
-        if energy_level:
-            custom_pets_query = custom_pets_query.filter_by(energy_level=energy_level)
-        
-        custom_pets = custom_pets_query.all()
-        custom_pets_dict = [pet.to_dict() for pet in custom_pets]
-        
-        # Combine both lists
-        all_pets = pets + custom_pets_dict
-        
-        # Filter out adopted and hidden pets
+        # Filter out adopted and hidden pets (use 'id' — dataset pets don't have 'pet_id')
         unavailable_pet_ids = get_unavailable_pet_ids()
-        all_pets = [pet for pet in all_pets if pet.get('pet_id') not in unavailable_pet_ids and str(pet.get('pet_id')) not in [str(pid) for pid in unavailable_pet_ids]]
+        all_pets = [pet for pet in all_pets if pet.get('id') not in unavailable_pet_ids]
         
-        all_pets = all_pets[:limit]
+        total_count = len(all_pets)
+        
+        # Legacy mode: if 'limit' param is provided, return all up to that limit (no pagination)
+        if legacy_limit is not None:
+            limit = int(legacy_limit)
+            limited_pets = all_pets[:limit]
+            return jsonify({
+                "ok": True,
+                "count": len(limited_pets),
+                "total_count": total_count,
+                "page": 1,
+                "per_page": limit,
+                "total_pages": 1,
+                "pets": limited_pets
+            })
+        
+        # Pagination
+        total_pages = max(1, -(-total_count // per_page))  # ceiling division
+        page = min(page, total_pages)
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_pets = all_pets[start:end]
         
         return jsonify({
             "ok": True,
-            "count": len(all_pets),
-            "pets": all_pets
+            "count": len(paginated_pets),
+            "total_count": total_count,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages,
+            "pets": paginated_pets
         })
     
     except Exception as e:
@@ -542,15 +918,24 @@ def get_my_adoption_requests():
 @app.route("/api/favorites", methods=["GET"])
 @login_required
 def get_favorites():
-    """Get user's favorite pets"""
+    """Get user's favorite pets with full details"""
     try:
         favorites = Favorite.query.filter_by(user_id=current_user.id).all()
         pet_ids = [fav.pet_id for fav in favorites]
         
+        # Get full pet details for each favorite
+        pets = []
+        if engine is not None:
+            for pid in pet_ids:
+                pet = engine.get_pet_by_id(pid)
+                if pet:
+                    pets.append(pet)
+        
         return jsonify({
             "ok": True,
             "count": len(pet_ids),
-            "pet_ids": pet_ids
+            "pet_ids": pet_ids,
+            "pets": pets
         })
     
     except Exception as e:
@@ -621,14 +1006,11 @@ def admin_get_stats():
         # Get hidden pets count
         stats['hidden_pets'] = HiddenPet.query.count()
         
-        # Get total pets (CSV + custom)
+        # Get total pets (dataset + custom — all in engine now)
         if engine:
-            csv_pet_count = engine.get_statistics()['total_pets']
+            stats['total_pets'] = engine.get_statistics()['total_pets']
         else:
-            csv_pet_count = 0
-        
-        custom_pet_count = CustomPet.query.count()
-        stats['total_pets'] = csv_pet_count + custom_pet_count
+            stats['total_pets'] = 0
         
         # Calculate available pets
         # Available = Total - Adopted - Hidden
@@ -963,43 +1345,115 @@ def admin_get_hidden_pets():
 @app.route("/api/admin/pets", methods=["POST"])
 @admin_required
 def admin_add_pet():
-    """Add a new custom pet"""
+    """Add a new custom pet (auto-assigns PetID continuing from dataset)"""
     try:
         data = request.json or {}
         
-        # Validate required fields
-        required_fields = ['name', 'type', 'breed', 'age_years', 'size', 'color', 'gender', 'weight_kg']
+        # Validate required fields (name is auto-generated)
+        required_fields = ['type', 'breed', 'age_months', 'size', 'color', 'gender', 'weight_kg']
         for field in required_fields:
-            if field not in data:
+            if field not in data or data[field] in (None, ''):
                 return jsonify({"ok": False, "message": f"Missing required field: {field}"}), 400
         
-        # Create new custom pet
+        # Auto-assign next pet_id
+        next_id = CustomPet.next_pet_id()
+        
+        # Map energy level to numeric for KNN
+        energy_map = {'High': 0, 'Low': 1, 'Moderate': 2}
+        size_map = {'Large': 0, 'Medium': 1, 'Small': 2}
+        health_map = {'Excellent': 0, 'Good': 1, 'Fair': 2}
+        
+        age_months = int(data['age_months'])
+        weight_kg = float(data['weight_kg'])
+        vaccinated = data.get('vaccinated', False)
+        kid_friendly = data.get('kid_friendly', True)
+        meat_consumption = data.get('meat_consumption', True)
+        shedding_level = int(data.get('shedding_level', 2))
+        energy_level = data.get('energy_level', 'Moderate')
+        size = data['size']
+        health_condition = data.get('health_condition', 'Good')
+        
+        # Admin-uploaded image (filename from /api/admin/upload-pet-image)
+        image_filename = data.get('image_filename', '') or None
+
         custom_pet = CustomPet(
-            name=data['name'],
+            pet_id=next_id,
             type=data['type'],
             breed=data['breed'],
-            age_years=int(data['age_years']),
-            age_months=data.get('age_months', 0),
-            size=data['size'],
+            age_months=age_months,
+            size=size,
             color=data['color'],
             gender=data['gender'],
-            weight_kg=float(data['weight_kg']),
-            vaccinated=data.get('vaccinated', False),
-            health_condition=data.get('health_condition', 'Good'),
-            kid_friendly=data.get('kid_friendly', True),
-            energy_level=data.get('energy_level', 'Moderate'),
+            weight_kg=weight_kg,
+            vaccinated=vaccinated,
+            health_condition=health_condition,
+            kid_friendly=kid_friendly,
+            energy_level=energy_level,
+            food_preference=data.get('food_preference', 'Non-Vegetarian'),
+            meat_consumption=meat_consumption,
+            shedding_level=shedding_level,
+            has_previous_owner=data.get('has_previous_owner', False),
+            days_in_shelter=int(data.get('days_in_shelter', 0)),
             description=data.get('description', ''),
-            pet_characteristics=data.get('description', ''),
+            pet_characteristics=data.get('pet_characteristics', ''),
             fee=data.get('fee', 100.0),
+            image_path=image_filename,
             created_by_admin_id=current_user.id
         )
         
         db.session.add(custom_pet)
         db.session.commit()
         
+        # Register with recommendation engine so it appears in quiz & text search
+        if engine is not None:
+            # Normalize values to match KNN feature encoding
+            # AgeMonths and WeightKg are raw floats in the dataset
+            # Normalize them the same way the scaler expects
+            pet_entry = {
+                'id': next_id,
+                'pet_id': next_id,
+                'index': len(engine.pets_database),
+                'name': custom_pet.name,
+                'type': data['type'],
+                'breed': data['breed'],
+                'age_months': age_months,
+                'color': data['color'],
+                'size': size,
+                'weight_kg': weight_kg,
+                'vaccinated': vaccinated,
+                'health_condition': health_condition,
+                'days_in_shelter': int(data.get('days_in_shelter', 0)),
+                'shelter_entry_date': (date.today() - timedelta(days=int(data.get('days_in_shelter', 0)))).isoformat(),
+                'has_previous_owner': data.get('has_previous_owner', False),
+                'gender': data['gender'],
+                'description': data.get('description', f"A {energy_level.lower()} energy {data['breed']} looking for a loving home."),
+                'shedding_level': shedding_level,
+                'food_preference': data.get('food_preference', 'Non-Vegetarian'),
+                'meat_consumption': meat_consumption,
+                'kid_friendly': kid_friendly,
+                'energy_level': energy_level,
+                'image_url': (f"/uploads/pets/{image_filename}" if image_filename
+                              else get_pet_image_url(data['breed'], data['color'], size, age_months, next_id)),
+                'pet_characteristics': data.get('pet_characteristics', ''),
+                'pet_details': data.get('description', ''),
+                'is_custom': True,
+                'raw_features': {
+                    'Size': size_map.get(size, 1),
+                    'EnergyLevel': energy_map.get(energy_level, 2),
+                    'kid_friendliness': int(kid_friendly),
+                    'Vaccinated': int(vaccinated),
+                    'shedding': shedding_level,
+                    'MeatConsumption': int(meat_consumption),
+                    'AgeMonths': (age_months - DATASET_AGE_MEAN) / DATASET_AGE_STD,
+                    'WeightKg': (weight_kg - DATASET_WEIGHT_MEAN) / DATASET_WEIGHT_STD,
+                    'HealthCondition': health_map.get(health_condition, 1),
+                }
+            }
+            engine.register_custom_pet(pet_entry)
+        
         return jsonify({
             "ok": True,
-            "message": f"Pet '{custom_pet.name}' added successfully",
+            "message": f"Pet '{custom_pet.name}' (#{next_id}) added successfully",
             "pet": custom_pet.to_dict()
         })
     
@@ -1007,19 +1461,141 @@ def admin_add_pet():
         db.session.rollback()
         return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
 
-@app.route("/api/admin/pets/<pet_id>", methods=["DELETE"])
+@app.route("/api/admin/pets/<int:pet_id>", methods=["PUT"])
+@admin_required
+def admin_edit_pet(pet_id):
+    """Edit a custom pet (only custom pets with pet_id > 1985)"""
+    try:
+        if pet_id <= CustomPet.DATASET_MAX_ID:
+            return jsonify({"ok": False, "message": "Can only edit custom pets. Dataset pets are read-only."}), 400
+        
+        custom_pet = CustomPet.query.filter_by(pet_id=pet_id).first()
+        if not custom_pet:
+            return jsonify({"ok": False, "message": "Pet not found"}), 404
+        
+        # Check if pet is adopted
+        adopted_pet = AdoptedPet.query.filter_by(pet_id=pet_id).first()
+        if adopted_pet:
+            return jsonify({"ok": False, "message": "Cannot edit an adopted pet"}), 400
+        
+        data = request.json or {}
+        
+        # Map strings to numeric for KNN
+        energy_map = {'High': 0, 'Low': 1, 'Moderate': 2}
+        size_map = {'Large': 0, 'Medium': 1, 'Small': 2}
+        health_map = {'Excellent': 0, 'Good': 1, 'Fair': 2}
+        
+        # Update fields if provided
+        if 'type' in data:
+            custom_pet.type = data['type']
+        if 'breed' in data:
+            custom_pet.breed = data['breed']
+        if 'age_months' in data:
+            custom_pet.age_months = int(data['age_months'])
+        if 'size' in data:
+            custom_pet.size = data['size']
+        if 'color' in data:
+            custom_pet.color = data['color']
+        if 'gender' in data:
+            custom_pet.gender = data['gender']
+        if 'weight_kg' in data:
+            custom_pet.weight_kg = float(data['weight_kg'])
+        if 'vaccinated' in data:
+            custom_pet.vaccinated = data['vaccinated']
+        if 'health_condition' in data:
+            custom_pet.health_condition = data['health_condition']
+        if 'kid_friendly' in data:
+            custom_pet.kid_friendly = data['kid_friendly']
+        if 'energy_level' in data:
+            custom_pet.energy_level = data['energy_level']
+        if 'food_preference' in data:
+            custom_pet.food_preference = data['food_preference']
+        if 'meat_consumption' in data:
+            custom_pet.meat_consumption = data['meat_consumption']
+        if 'shedding_level' in data:
+            custom_pet.shedding_level = int(data['shedding_level'])
+        if 'has_previous_owner' in data:
+            custom_pet.has_previous_owner = data['has_previous_owner']
+        if 'days_in_shelter' in data:
+            custom_pet.days_in_shelter = int(data['days_in_shelter'])
+        if 'description' in data:
+            custom_pet.description = data['description']
+        if 'fee' in data:
+            custom_pet.fee = float(data['fee'])
+        if 'image_filename' in data:
+            # Delete old uploaded image if replacing
+            if custom_pet.image_path and data['image_filename'] != custom_pet.image_path:
+                old_path = os.path.join(UPLOAD_DIR, secure_filename(custom_pet.image_path))
+                if os.path.isfile(old_path):
+                    os.remove(old_path)
+            custom_pet.image_path = data['image_filename'] or None
+        
+        db.session.commit()
+        
+        # Update in recommendation engine
+        if engine is not None:
+            pet_entry = {
+                'id': pet_id,
+                'pet_id': pet_id,
+                'index': 0,  # will be corrected by update_custom_pet
+                'name': custom_pet.name,
+                'type': custom_pet.type,
+                'breed': custom_pet.breed,
+                'age_months': custom_pet.age_months,
+                'color': custom_pet.color,
+                'size': custom_pet.size,
+                'weight_kg': custom_pet.weight_kg,
+                'vaccinated': custom_pet.vaccinated,
+                'health_condition': custom_pet.health_condition,
+                'days_in_shelter': custom_pet.days_in_shelter,
+                'shelter_entry_date': (date.today() - timedelta(days=custom_pet.days_in_shelter or 0)).isoformat(),
+                'has_previous_owner': custom_pet.has_previous_owner,
+                'gender': custom_pet.gender,
+                'description': custom_pet.description or f"A {custom_pet.energy_level.lower()} energy {custom_pet.breed} looking for a loving home.",
+                'shedding_level': custom_pet.shedding_level,
+                'food_preference': custom_pet.food_preference,
+                'meat_consumption': custom_pet.meat_consumption,
+                'kid_friendly': custom_pet.kid_friendly,
+                'energy_level': custom_pet.energy_level,
+                'image_url': (f"/uploads/pets/{custom_pet.image_path}" if custom_pet.image_path
+                              else get_pet_image_url(custom_pet.breed, custom_pet.color, custom_pet.size, custom_pet.age_months, pet_id)),
+                'pet_characteristics': custom_pet.pet_characteristics or '',
+                'pet_details': custom_pet.description or '',
+                'is_custom': True,
+                'raw_features': {
+                    'Size': size_map.get(custom_pet.size, 1),
+                    'EnergyLevel': energy_map.get(custom_pet.energy_level, 2),
+                    'kid_friendliness': int(custom_pet.kid_friendly),
+                    'Vaccinated': int(custom_pet.vaccinated),
+                    'shedding': custom_pet.shedding_level,
+                    'MeatConsumption': int(custom_pet.meat_consumption),
+                    'AgeMonths': (custom_pet.age_months - DATASET_AGE_MEAN) / DATASET_AGE_STD,
+                    'WeightKg': (custom_pet.weight_kg - DATASET_WEIGHT_MEAN) / DATASET_WEIGHT_STD,
+                    'HealthCondition': health_map.get(custom_pet.health_condition, 1),
+                }
+            }
+            engine.update_custom_pet(pet_id, pet_entry)
+        
+        return jsonify({
+            "ok": True,
+            "message": f"Pet '{custom_pet.name}' updated successfully",
+            "pet": custom_pet.to_dict()
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
+
+@app.route("/api/admin/pets/<int:pet_id>", methods=["DELETE"])
 @admin_required
 def admin_delete_pet(pet_id):
-    """Delete a custom pet permanently"""
+    """Delete a custom pet permanently (only custom pets with pet_id > 1985)"""
     try:
-        # Only allow deletion of custom pets (not CSV pets)
-        if not str(pet_id).startswith('custom_'):
-            return jsonify({"ok": False, "message": "Can only delete custom pets. Use Hide for CSV pets."}), 400
+        # Only allow deletion of custom pets (ID > dataset max)
+        if pet_id <= CustomPet.DATASET_MAX_ID:
+            return jsonify({"ok": False, "message": "Can only delete custom pets. Use Hide for dataset pets."}), 400
         
-        # Extract the numeric ID
-        custom_id = int(str(pet_id).replace('custom_', ''))
-        
-        custom_pet = CustomPet.query.get(custom_id)
+        custom_pet = CustomPet.query.filter_by(pet_id=pet_id).first()
         
         if not custom_pet:
             return jsonify({"ok": False, "message": "Pet not found"}), 404
@@ -1031,8 +1607,16 @@ def admin_delete_pet(pet_id):
         
         pet_name = custom_pet.name
         
-        # Delete associated adoption requests
+        # Delete associated records
         AdoptionRequest.query.filter_by(pet_id=pet_id).delete()
+        Favorite.query.filter_by(pet_id=pet_id).delete()
+        HiddenPet.query.filter_by(pet_id=pet_id).delete()
+        
+        # Remove from recommendation engine if loaded
+        if engine is not None:
+            engine.pets_database = [p for p in engine.pets_database if p['id'] != pet_id]
+            # Note: SBERT embeddings & KNN scaled arrays keep stale rows
+            # but they'll never match since the pet is gone from pets_database
         
         # Delete the pet
         db.session.delete(custom_pet)
@@ -1076,11 +1660,79 @@ def server_error(e):
 
 # ==================== DATABASE INITIALIZATION ====================
 
+def load_custom_pets_into_engine():
+    """Load any custom pets from DB into the recommendation engine on startup"""
+    if engine is None:
+        return
+    custom_pets = CustomPet.query.all()
+    if not custom_pets:
+        return
+    
+    energy_map = {'High': 0, 'Low': 1, 'Moderate': 2}
+    size_map = {'Large': 0, 'Medium': 1, 'Small': 2}
+    health_map = {'Excellent': 0, 'Good': 1, 'Fair': 2}
+    
+    for cp in custom_pets:
+        pet_entry = {
+            'id': cp.pet_id,
+            'pet_id': cp.pet_id,
+            'index': len(engine.pets_database),
+            'name': cp.name,
+            'type': cp.type,
+            'breed': cp.breed,
+            'age_months': cp.age_months,
+            'color': cp.color,
+            'size': cp.size,
+            'weight_kg': cp.weight_kg,
+            'vaccinated': cp.vaccinated,
+            'health_condition': cp.health_condition,
+            'days_in_shelter': cp.days_in_shelter or 0,
+            'has_previous_owner': cp.has_previous_owner,
+            'gender': cp.gender,
+            'description': cp.description or f"A {cp.energy_level.lower()} energy {cp.breed} looking for a loving home.",
+            'shedding_level': cp.shedding_level,
+            'food_preference': cp.food_preference,
+            'meat_consumption': cp.meat_consumption,
+            'kid_friendly': cp.kid_friendly,
+            'energy_level': cp.energy_level,
+            'image_url': (f"/uploads/pets/{cp.image_path}" if cp.image_path
+                          else get_pet_image_url(cp.breed, cp.color, cp.size, cp.age_months, cp.pet_id)),
+            'pet_characteristics': cp.pet_characteristics or '',
+            'pet_details': cp.description or '',
+            'is_custom': True,
+            'raw_features': {
+                'Size': size_map.get(cp.size, 1),
+                'EnergyLevel': energy_map.get(cp.energy_level, 2),
+                'kid_friendliness': int(cp.kid_friendly),
+                'Vaccinated': int(cp.vaccinated),
+                'shedding': cp.shedding_level,
+                'MeatConsumption': int(cp.meat_consumption),
+                'AgeMonths': (cp.age_months - DATASET_AGE_MEAN) / DATASET_AGE_STD,
+                'WeightKg': (cp.weight_kg - DATASET_WEIGHT_MEAN) / DATASET_WEIGHT_STD,
+                'HealthCondition': health_map.get(cp.health_condition, 1),
+            }
+        }
+        engine.register_custom_pet(pet_entry)
+    
+    print(f"✅ Loaded {len(custom_pets)} custom pet(s) into recommendation engine")
+
+
 def init_database():
-    """Initialize database tables"""
+    """Initialize database tables and load custom pets into engine"""
     with app.app_context():
         db.create_all()
-        print("✅ Database tables created successfully!")
+        # ── Migrate: add image_path column if missing ──
+        try:
+            with db.engine.connect() as conn:
+                cols = [r[1] for r in conn.execute(db.text("PRAGMA table_info(custom_pets)"))]
+                if 'image_path' not in cols:
+                    conn.execute(db.text("ALTER TABLE custom_pets ADD COLUMN image_path VARCHAR(300)"))
+                    conn.commit()
+                    print("✅ Migrated: added image_path column to custom_pets")
+        except Exception as e:
+            print(f"⚠️  Migration note: {e}")
+        print("✅ Database tables ready!")
+        load_custom_pets_into_engine()
 
 # ==================== MAIN ====================
 
@@ -1105,9 +1757,8 @@ if __name__ == "__main__":
         print(f"✓ Total Pets: {stats['total_pets']}")
         for pet_type, count in stats['by_type'].items():
             print(f"  - {pet_type}: {count}")
-        print("="*60)
+
         print("🚀 Starting Flask server on http://localhost:5000")
         print("="*60 + "\n")
     
     app.run(debug=True, host="0.0.0.0", port=5000)
-
