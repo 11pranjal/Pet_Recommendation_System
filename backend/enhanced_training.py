@@ -9,11 +9,8 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-import joblib
 import pickle
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from datetime import date, timedelta
 from sentence_transformers import SentenceTransformer
 import warnings
 warnings.filterwarnings("ignore")
@@ -202,6 +199,7 @@ def load_and_prepare_dataset():
             'vaccinated': bool(row['Vaccinated']),
             'health_condition': "Excellent" if row['HealthCondition'] == 0 else "Good",
             'days_in_shelter': real_days,
+            'shelter_entry_date': (date.today() - timedelta(days=real_days)).isoformat(),
             'has_previous_owner': bool(row['PreviousOwner']),
             'gender': real_gender,
             'description': row['pet_details'],
@@ -242,45 +240,41 @@ def load_and_prepare_dataset():
     
     return df, pets_database
 
-def train_knn_model(df):
-    """Train KNN model for quiz-based recommendations"""
+def build_knn_features(df):
+    """Extract feature matrix for nearest-neighbor quiz recommendations.
+
+    The CSV is already Z-score normalized for AgeMonths/WeightKg and
+    integer-coded for categorical features — no additional scaling needed.
+    Previously this function trained a KNeighborsClassifier and applied
+    StandardScaler, but both were redundant:
+      - Each pet was its own class (y = index), so KNN was just a neighbor lookup
+      - Double-scaling distorted distances between quiz answers and pet features
+    Now we simply save the raw feature matrix for direct distance computation.
+    """
     print("\n" + "="*50)
-    print("Training KNN Model...")
+    print("Building KNN Feature Matrix...")
     print("="*50)
-    
-    # Features to use for matching (user preferences)
-    # 9 features: all map to quiz questions (directly or indirectly)
+
+    # 9 features that map to quiz questions
     feature_columns = ['Size', 'EnergyLevel', 'kid_friendliness', 'Vaccinated',
                       'shedding', 'MeatConsumption', 'AgeMonths', 'WeightKg',
                       'HealthCondition']
-    
+
     X = df[feature_columns].values.astype(float)
-    y = df.index.values  # Use dataframe index as target
-    
+
     print(f"Feature matrix shape: {X.shape}")
-    
-    # Scale features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    
-    # Train KNN
-    # Optimal k=5 determined by Elbow Method analysis (best RMSE, odd number)
-    knn = KNeighborsClassifier(n_neighbors=5, weights="distance", metric='euclidean')
-    knn.fit(X_scaled, y)
-    
-    # Save model and components
-    joblib.dump(knn, os.path.join(MODEL_DIR, "knn_model.joblib"))
-    joblib.dump(scaler, os.path.join(MODEL_DIR, "knn_scaler.joblib"))
-    np.save(os.path.join(MODEL_DIR, "knn_X_scaled.npy"), X_scaled)
-    
+
+    # Save feature matrix (already normalized — no scaler needed)
+    np.save(os.path.join(MODEL_DIR, "knn_X.npy"), X)
+
     # Save feature column names for reference
     with open(os.path.join(MODEL_DIR, "knn_features.txt"), "w") as f:
         f.write(",".join(feature_columns))
-    
-    print(f"✓ KNN model trained with {len(X)} samples")
+
+    print(f"✓ Feature matrix saved with {len(X)} samples")
     print(f"✓ Feature columns: {feature_columns}")
-    
-    return knn, scaler, X_scaled
+
+    return X
 
 def train_sbert_model(pets_database):
     """Create SBERT embeddings for text-based search with enhanced characteristics"""
@@ -383,15 +377,25 @@ def train_sbert_model(pets_database):
     # Generate embeddings
     print(f"Generating embeddings for {len(pet_texts)} pets...")
     embeddings = sbert_model.encode(pet_texts, show_progress_bar=True, batch_size=32)
-    
+
     # Save embeddings
     np.save(os.path.join(MODEL_DIR, "sbert_embeddings.npy"), embeddings)
-    
+
+    # Pre-compute description-only embeddings (avoids per-query re-encoding)
+    print("Pre-computing description embeddings...")
+    desc_texts = []
+    for pet in pets_database:
+        desc = pet.get('description', '') or ''
+        desc_texts.append(desc if len(desc.strip()) > 5 else "")
+    desc_embeddings = sbert_model.encode(desc_texts, show_progress_bar=True, batch_size=32)
+    np.save(os.path.join(MODEL_DIR, "sbert_desc_embeddings.npy"), desc_embeddings)
+    print(f"✓ Description embeddings created: shape {desc_embeddings.shape}")
+
     # Save model
     sbert_model.save(os.path.join(MODEL_DIR, "sbert_model"))
-    
+
     print(f"✓ SBERT embeddings created: shape {embeddings.shape}")
-    
+
     return embeddings
 
 def main():
@@ -409,8 +413,8 @@ def main():
         pickle.dump(pets_database, f)
     print(f"\n✓ Saved pets database to: {db_path}")
     
-    # Train KNN model (quiz-based)
-    knn, scaler, X_scaled = train_knn_model(df)
+    # Build KNN feature matrix (quiz-based)
+    X = build_knn_features(df)
     
     # Train SBERT model (text-based)
     sbert_embeddings = train_sbert_model(pets_database)
@@ -420,13 +424,12 @@ def main():
     print("✅ TRAINING COMPLETED SUCCESSFULLY!")
     print("="*60)
     print(f"\nFiles created in '{MODEL_DIR}/':")
-    print("  📁 pets_database.pkl      - Pet information database")
-    print("  🤖 knn_model.joblib       - Quiz recommendation model")
-    print("  📏 knn_scaler.joblib      - Feature scaler")
-    print("  📊 knn_X_scaled.npy       - Scaled feature matrix")
-    print("  📝 knn_features.txt       - Feature column names")
-    print("  🔤 sbert_embeddings.npy   - Text embeddings")
-    print("  🧠 sbert_model/           - SBERT model directory")
+    print("  📁 pets_database.pkl           - Pet information database")
+    print("  📊 knn_X.npy                   - Feature matrix (already normalized)")
+    print("  📝 knn_features.txt            - Feature column names")
+    print("  🔤 sbert_embeddings.npy        - Full pet text embeddings")
+    print("  🔤 sbert_desc_embeddings.npy   - Description-only embeddings")
+    print("  🧠 sbert_model/                - SBERT model directory")
     
     # Display sample pets
     print("\n" + "="*60)

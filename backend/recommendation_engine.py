@@ -6,8 +6,8 @@ Pet Recommendation Engine
 """
 
 import numpy as np
-import joblib
 import pickle
+from datetime import date
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
@@ -17,11 +17,10 @@ class PetRecommendationEngine:
     def __init__(self, model_dir="model"):
         self.model_dir = model_dir
         self.pets_database = None
-        self.knn_model = None
-        self.knn_scaler = None
-        self.knn_X_scaled = None  # scaled training features for manual distance calc
+        self.knn_X = None  # feature matrix for nearest-neighbor distance calc
         self.sbert_model = None
         self.sbert_embeddings = None
+        self.sbert_desc_embeddings = None  # pre-computed description embeddings
         self.feature_columns = None
         self.load_models()
     
@@ -38,11 +37,17 @@ class PetRecommendationEngine:
             self.pets_database = pickle.load(f)
         print(f"✓ Loaded {len(self.pets_database)} pets from database")
         
-        # Load KNN model
-        self.knn_model = joblib.load(os.path.join(self.model_dir, "knn_model.joblib"))
-        self.knn_scaler = joblib.load(os.path.join(self.model_dir, "knn_scaler.joblib"))
-        self.knn_X_scaled = np.load(os.path.join(self.model_dir, "knn_X_scaled.npy"))
-        print("✓ Loaded KNN model")
+        # Load KNN feature matrix (new: raw features; fallback: old double-scaled)
+        knn_x_path = os.path.join(self.model_dir, "knn_X.npy")
+        knn_x_old_path = os.path.join(self.model_dir, "knn_X_scaled.npy")
+        if os.path.exists(knn_x_path):
+            self.knn_X = np.load(knn_x_path)
+            print("✓ Loaded KNN feature matrix")
+        elif os.path.exists(knn_x_old_path):
+            self.knn_X = np.load(knn_x_old_path)
+            print("⚠️  Loaded old knn_X_scaled.npy — retrain with enhanced_training.py for best results")
+        else:
+            raise FileNotFoundError("KNN feature matrix not found! Please run training first.")
         
         # Load feature columns
         with open(os.path.join(self.model_dir, "knn_features.txt"), "r") as f:
@@ -53,6 +58,15 @@ class PetRecommendationEngine:
         self.sbert_model = SentenceTransformer(os.path.join(self.model_dir, "sbert_model"))
         self.sbert_embeddings = np.load(os.path.join(self.model_dir, "sbert_embeddings.npy"))
         print("✓ Loaded SBERT model and embeddings")
+
+        # Load pre-computed description embeddings (optional — falls back to per-query encoding)
+        desc_emb_path = os.path.join(self.model_dir, "sbert_desc_embeddings.npy")
+        if os.path.exists(desc_emb_path):
+            self.sbert_desc_embeddings = np.load(desc_emb_path)
+            print("✓ Loaded pre-computed description embeddings")
+        else:
+            self.sbert_desc_embeddings = None
+            print("⚠️  No pre-computed description embeddings — will encode per query")
         
         print("✅ All models loaded successfully!\n")
     
@@ -72,16 +86,17 @@ class PetRecommendationEngine:
         results to be dominated by a single pet type.
         """
         # Convert user answers to feature vector
-        feature_vector = self._quiz_to_features(user_answers)
-        
-        # Scale features using the same scaler KNN was trained with
-        feature_scaled = self.knn_scaler.transform([feature_vector])[0]
+        # Values are already in the same space as the CSV (integer codes + Z-scores)
+        query_features = np.array(self._quiz_to_features(user_answers), dtype=float)
         
         # --- Build hard-constraint filters ---
         hard_filters = {}
         
-        # Meat consumption: if user says NO meat, exclude all meat-consuming pets
-        if not user_answers.get('okay_with_meat_diet', True):
+        # Meat diet preference: 'yes' = only meat pets, 'no' = only herbivores, 'any' = no filter
+        meat_pref = user_answers.get('meat_diet_preference', 'any')
+        if meat_pref == 'yes':
+            hard_filters['meat_consumption'] = True
+        elif meat_pref == 'no':
             hard_filters['meat_consumption'] = False
         
         # Pet type: if user specified a type, only show that type
@@ -97,7 +112,7 @@ class PetRecommendationEngine:
         
         # --- Filter eligible pets, then rank by feature distance ---
         candidates = []
-        knn_size = len(self.knn_X_scaled) if self.knn_X_scaled is not None else 0
+        knn_size = len(self.knn_X) if self.knn_X is not None else 0
         for idx, pet in enumerate(self.pets_database):
             # Apply hard filters
             if 'meat_consumption' in hard_filters:
@@ -109,15 +124,15 @@ class PetRecommendationEngine:
             if 'gender' in hard_filters:
                 if pet.get('gender') != hard_filters['gender']:
                     continue
-            
+
             # Safety: skip if KNN features not available for this index
             # (can happen if custom pet's raw_features were empty)
             if idx >= knn_size:
                 continue
-            
-            # Compute euclidean distance in scaled feature space
-            pet_scaled = self.knn_X_scaled[idx]
-            dist = np.sqrt(np.sum((feature_scaled - pet_scaled) ** 2))
+
+            # Compute euclidean distance in feature space
+            pet_features = self.knn_X[idx]
+            dist = np.sqrt(np.sum((query_features - pet_features) ** 2))
             candidates.append((idx, dist))
         
         # Sort by distance (closest = best match)
@@ -161,17 +176,13 @@ class PetRecommendationEngine:
         scale_factor = 0.15
         recommendations = []
         for rank, (pet_idx, dist) in enumerate(final_candidates, 1):
-            pet = self.pets_database[pet_idx].copy()
-            
+            pet = self._clean_pet(self.pets_database[pet_idx])
+
             confidence = 100.0 / (1.0 + dist * scale_factor)
             pet['match_score'] = round(confidence, 1)
             pet['rank'] = rank
             pet['match_reason'] = self._generate_match_reason(pet, user_answers)
-            
-            # Clean up - remove raw features from response
-            if 'raw_features' in pet:
-                del pet['raw_features']
-            
+
             recommendations.append(pet)
         
         return recommendations
@@ -231,24 +242,32 @@ class PetRecommendationEngine:
         # Calculate cosine similarity with all pets
         semantic_scores = cosine_similarity(query_embedding, self.sbert_embeddings)[0]
         
-        # --- Pre-compute description-specific similarity for top candidates ---
-        # Only encode descriptions for the top 50 semantic matches (batch encode = fast)
+        # --- Description-specific similarity for top candidates ---
         top_candidate_indices = np.argsort(semantic_scores)[::-1][:50].tolist()
-        desc_texts = []
-        desc_idx_map = []  # maps position in desc_texts back to pet index
-        for idx in top_candidate_indices:
-            if idx < len(self.pets_database):
-                desc = self.pets_database[idx].get('description', '') or ''
-                if desc and len(desc.strip()) > 5:
-                    desc_texts.append(desc)
-                    desc_idx_map.append(idx)
-        
         desc_scores = {}
-        if desc_texts:
-            desc_embeddings = self.sbert_model.encode(desc_texts)  # batch encode
-            desc_sims = cosine_similarity(query_embedding, desc_embeddings)[0]
-            for pos, idx in enumerate(desc_idx_map):
-                desc_scores[idx] = float(desc_sims[pos])
+        if self.sbert_desc_embeddings is not None:
+            # Use pre-computed description embeddings (fast path)
+            valid_indices = [i for i in top_candidate_indices if i < len(self.sbert_desc_embeddings)]
+            if valid_indices:
+                desc_emb_batch = self.sbert_desc_embeddings[valid_indices]
+                desc_sims = cosine_similarity(query_embedding, desc_emb_batch)[0]
+                for pos, idx in enumerate(valid_indices):
+                    desc_scores[idx] = float(desc_sims[pos])
+        else:
+            # Fallback: encode descriptions per query (slow path)
+            desc_texts = []
+            desc_idx_map = []
+            for idx in top_candidate_indices:
+                if idx < len(self.pets_database):
+                    desc = self.pets_database[idx].get('description', '') or ''
+                    if desc and len(desc.strip()) > 5:
+                        desc_texts.append(desc)
+                        desc_idx_map.append(idx)
+            if desc_texts:
+                desc_embeddings = self.sbert_model.encode(desc_texts)
+                desc_sims = cosine_similarity(query_embedding, desc_embeddings)[0]
+                for pos, idx in enumerate(desc_idx_map):
+                    desc_scores[idx] = float(desc_sims[pos])
         
         # --- Determine which attributes should act as HARD FILTERS ---
         # When user explicitly says "small black pet", they do NOT want large or gray pets.
@@ -291,16 +310,18 @@ class PetRecommendationEngine:
                 elif attr_name == 'color':
                     # attr_value is a list of colors, e.g. ['black'] or ['black', 'white']
                     # Pet matches if ANY user color appears in the pet's color string
-                    # e.g. "black" matches pet color "black and red"
+                    # Uses word-boundary matching to avoid false positives
+                    # (e.g. "red" should NOT match "cream")
+                    import re
                     pet_color = pet.get('color', '').lower()
                     color_match = False
                     for c in attr_value:
-                        if c in pet_color:
+                        if re.search(r'\b' + re.escape(c) + r'\b', pet_color):
                             color_match = True
                             break
                         # grey ↔ gray equivalence
                         alt = 'grey' if c == 'gray' else ('gray' if c == 'grey' else None)
-                        if alt and alt in pet_color:
+                        if alt and re.search(r'\b' + re.escape(alt) + r'\b', pet_color):
                             color_match = True
                             break
                     if not color_match:
@@ -495,17 +516,16 @@ class PetRecommendationEngine:
         for rank, result in enumerate(top_results, 1):
             # Convert final score to confidence (0-100%)
             confidence = float(result['final'] * 100)
-            
-            pet = result['pet'].copy()
+
+            pet = self._clean_pet(result['pet'])
             pet['match_score'] = round(confidence, 1)
             pet['rank'] = rank
-            
+
             # Generate match reason
             reason_parts = []
             if hard_attribute_filters:
                 matched_attrs = []
                 for k, v in hard_attribute_filters.items():
-                    # Format list values nicely (e.g. color: ['black'] → "color: black")
                     if isinstance(v, list):
                         matched_attrs.append(f"{k}: {', '.join(str(x) for x in v)}")
                     else:
@@ -516,11 +536,7 @@ class PetRecommendationEngine:
             if not reason_parts:
                 reason_parts.append(f"Semantic match: \"{query_text[:50]}\"")
             pet['match_reason'] = "; ".join(reason_parts)
-            
-            # Clean up
-            if 'raw_features' in pet:
-                del pet['raw_features']
-            
+
             recommendations.append(pet)
         
         return recommendations
@@ -847,7 +863,12 @@ class PetRecommendationEngine:
             pet_copy['age_years'] = total_months // 12
             pet_copy['age_remaining_months'] = total_months % 12
             # age_months stays as total months (NOT overwritten)
-        
+
+        # Compute days_in_shelter dynamically from shelter_entry_date
+        if 'shelter_entry_date' in pet_copy:
+            entry = date.fromisoformat(pet_copy['shelter_entry_date'])
+            pet_copy['days_in_shelter'] = (date.today() - entry).days
+
         return pet_copy
     
     def _quiz_to_features(self, answers):
@@ -861,7 +882,7 @@ class PetRecommendationEngine:
         - has_kids: true/false
         - vaccinated_important: true/false
         - shedding_tolerance: 0-5 (higher = more tolerant)
-        - okay_with_meat_diet: true/false
+        - meat_diet_preference: 'yes'/'no'/'any'
         - age_preference: 0=young (<12 months), 1=adult (12-60), 2=senior (60+)
         - home_type: 'Apartment'|'House with small yard'|'House with large yard'|'Farm/Rural property'
         - health_preference: 0=open to health issues, 1=no health issues, 2=depends
@@ -878,23 +899,13 @@ class PetRecommendationEngine:
         kid_friendly = 1 if answers.get('has_kids', False) else 0
         vaccinated = 1 if answers.get('vaccinated_important', True) else 0
         shedding = answers.get('shedding_tolerance', 3)  # 0-5 range
-        meat_consumption = 1 if answers.get('okay_with_meat_diet', True) else 0
+        meat_pref = answers.get('meat_diet_preference', 'any')
+        meat_consumption = 1 if meat_pref == 'yes' else (0 if meat_pref == 'no' else 1)
         
-        # --- Home type adjusts size & energy as a reinforcement signal ---
-        home_type = answers.get('home_type', '')
-        if home_type == 'Apartment':
-            # Apartment living favors smaller, calmer pets
-            if size == 1:  # user said medium → nudge toward small
-                size = 2  # small
-            if energy_level == 2:  # user said moderate → nudge toward low
-                energy_level = 1  # low
-        elif home_type in ('House with large yard', 'Farm/Rural property'):
-            # Large space favors bigger, more active pets
-            if size == 1:  # user said medium → nudge toward large
-                size = 0  # large
-            if energy_level == 2:  # user said moderate → nudge toward high
-                energy_level = 0  # high
-        # 'House with small yard' → keep user's direct answers as-is
+        # Home type is informational context only — the user's explicit
+        # size and energy answers are respected as-is.  Previously this
+        # block silently replaced medium→small (apartment) or medium→large
+        # (large yard), overriding the user's actual choice.
         
         # Age preference to normalized age months
         # Training CSV AgeMonths is Z-score normalized with mean=81.56mo, std=57.85mo
@@ -1061,14 +1072,19 @@ class PetRecommendationEngine:
             text = self._build_pet_text(pet_dict)
             new_emb = self.sbert_model.encode([text])  # shape (1, dim)
             self.sbert_embeddings = np.vstack([self.sbert_embeddings, new_emb])
-        
-        # --- 3. KNN scaled features ---
-        if self.knn_scaler is not None and self.knn_X_scaled is not None:
+
+            # Also add description embedding
+            desc = pet_dict.get('description', '') or ''
+            desc_emb = self.sbert_model.encode([desc])
+            if self.sbert_desc_embeddings is not None:
+                self.sbert_desc_embeddings = np.vstack([self.sbert_desc_embeddings, desc_emb])
+
+        # --- 3. KNN features (no scaler — data is already normalized) ---
+        if self.knn_X is not None:
             raw = pet_dict.get('raw_features', {})
             if raw and self.feature_columns:
                 feat_vec = np.array([[raw.get(col, 0) for col in self.feature_columns]], dtype=float)
-                feat_scaled = self.knn_scaler.transform(feat_vec)
-                self.knn_X_scaled = np.vstack([self.knn_X_scaled, feat_scaled])
+                self.knn_X = np.vstack([self.knn_X, feat_vec])
         
         print(f"✅ Registered custom pet #{pet_dict['id']} into recommendation engine "
               f"(total: {len(self.pets_database)})")
@@ -1098,14 +1114,19 @@ class PetRecommendationEngine:
             text = self._build_pet_text(pet_dict)
             new_emb = self.sbert_model.encode([text])  # shape (1, dim)
             self.sbert_embeddings[idx] = new_emb[0]
-        
-        # --- 4. Recompute KNN scaled features ---
-        if self.knn_scaler is not None and self.knn_X_scaled is not None:
+
+            # Also update description embedding
+            if self.sbert_desc_embeddings is not None:
+                desc = pet_dict.get('description', '') or ''
+                desc_emb = self.sbert_model.encode([desc])
+                self.sbert_desc_embeddings[idx] = desc_emb[0]
+
+        # --- 4. Recompute KNN features (no scaler — data is already normalized) ---
+        if self.knn_X is not None:
             raw = pet_dict.get('raw_features', {})
             if raw and self.feature_columns:
                 feat_vec = np.array([[raw.get(col, 0) for col in self.feature_columns]], dtype=float)
-                feat_scaled = self.knn_scaler.transform(feat_vec)
-                self.knn_X_scaled[idx] = feat_scaled[0]
+                self.knn_X[idx] = feat_vec[0]
         
         print(f"✅ Updated custom pet #{pet_id} in recommendation engine")
         return True
