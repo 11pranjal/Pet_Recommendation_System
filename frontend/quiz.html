@@ -157,13 +157,23 @@
             </div>
 
             <div class="progress-bar-container">
-                <div class="progress-bar" id="progressBar" style="width: 10%;"></div>
+                <div class="progress-bar" id="progressBar" style="width: 9%;"></div>
             </div>
-            <div class="question-counter" id="questionCounter">Question 1 of 10</div>
+            <div class="question-counter" id="questionCounter">Question 1 of 11</div>
 
             <form id="quizForm">
                 <div class="question-card active" data-question="1">
-                    <h3 class="question-title">1. What type of home do you live in?</h3>
+                    <h3 class="question-title">1. What type of pet are you looking for?</h3>
+                    <div class="radio-options">
+                        <label class="radio-option"><input type="radio" name="pet_type" value="Dog"><span class="radio-label">Dog</span></label>
+                        <label class="radio-option"><input type="radio" name="pet_type" value="Cat"><span class="radio-label">Cat</span></label>
+                        <label class="radio-option"><input type="radio" name="pet_type" value="Bird"><span class="radio-label">Bird</span></label>
+                        <label class="radio-option"><input type="radio" name="pet_type" value="Rabbit"><span class="radio-label">Rabbit</span></label>
+                        <label class="radio-option"><input type="radio" name="pet_type" value="No preference"><span class="radio-label">No preference</span></label>
+                    </div>
+                </div>
+                <div class="question-card" data-question="2">
+                    <h3 class="question-title">2. What type of home do you live in?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="home_type" value="Apartment"><span class="radio-label">Apartment</span></label>
                         <label class="radio-option"><input type="radio" name="home_type" value="House with small yard"><span class="radio-label">House with a small yard</span></label>
@@ -171,71 +181,72 @@
                         <label class="radio-option"><input type="radio" name="home_type" value="Farm/Rural property"><span class="radio-label">Farm / Rural property</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="2">
-                    <h3 class="question-title">2. How active are you on a daily basis?</h3>
+                <div class="question-card" data-question="3">
+                    <h3 class="question-title">3. How active are you on a daily basis?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="activity_level" value="Low"><span class="radio-label">Low</span></label>
                         <label class="radio-option"><input type="radio" name="activity_level" value="Moderate"><span class="radio-label">Moderate</span></label>
                         <label class="radio-option"><input type="radio" name="activity_level" value="High"><span class="radio-label">High</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="3">
-                    <h3 class="question-title">3. Do you have children at home?</h3>
+                <div class="question-card" data-question="4">
+                    <h3 class="question-title">4. Do you have children at home?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="children" value="Yes"><span class="radio-label">Yes</span></label>
                         <label class="radio-option"><input type="radio" name="children" value="No"><span class="radio-label">No</span></label>
                         <label class="radio-option"><input type="radio" name="children" value="Plan to have"><span class="radio-label">Plan to have</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="4">
-                    <h3 class="question-title">4. What age range do you prefer for your pet?</h3>
+                <div class="question-card" data-question="5">
+                    <h3 class="question-title">5. What age range do you prefer for your pet?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="age_range" value="Young"><span class="radio-label">Young</span></label>
                         <label class="radio-option"><input type="radio" name="age_range" value="Adult"><span class="radio-label">Adult</span></label>
                         <label class="radio-option"><input type="radio" name="age_range" value="Senior"><span class="radio-label">Senior</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="5">
-                    <h3 class="question-title">5. Do you have a preference for the size of your pet?</h3>
+                <div class="question-card" data-question="6">
+                    <h3 class="question-title">6. Do you have a preference for the size of your pet?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="size" value="Small"><span class="radio-label">Small</span></label>
                         <label class="radio-option"><input type="radio" name="size" value="Medium"><span class="radio-label">Medium</span></label>
                         <label class="radio-option"><input type="radio" name="size" value="Large"><span class="radio-label">Large</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="6">
-                    <h3 class="question-title">6. Do you have a preference for your pet's gender?</h3>
+                <div class="question-card" data-question="7">
+                    <h3 class="question-title">7. Do you have a preference for your pet's gender?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="gender" value="Male"><span class="radio-label">Male</span></label>
                         <label class="radio-option"><input type="radio" name="gender" value="Female"><span class="radio-label">Female</span></label>
                         <label class="radio-option"><input type="radio" name="gender" value="No preference"><span class="radio-label">No preference</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="7">
-                    <h3 class="question-title">7. How much grooming are you willing to do?</h3>
+                <div class="question-card" data-question="8">
+                    <h3 class="question-title">8. How much grooming are you willing to do?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="grooming" value="Very Little"><span class="radio-label">Very Little</span></label>
                         <label class="radio-option"><input type="radio" name="grooming" value="Moderate"><span class="radio-label">Moderate</span></label>
                         <label class="radio-option"><input type="radio" name="grooming" value="High"><span class="radio-label">High</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="8">
-                    <h3 class="question-title">8. Are you okay with your pet consuming a meat-based diet?</h3>
+                <div class="question-card" data-question="9">
+                    <h3 class="question-title">9. What type of diet do you prefer for your pet?</h3>
                     <div class="radio-options">
-                        <label class="radio-option"><input type="radio" name="meat_diet" value="Yes"><span class="radio-label">Yes</span></label>
-                        <label class="radio-option"><input type="radio" name="meat_diet" value="No"><span class="radio-label">No</span></label>
+                        <label class="radio-option"><input type="radio" name="meat_diet" value="Meat"><span class="radio-label">Meat-based diet</span></label>
+                        <label class="radio-option"><input type="radio" name="meat_diet" value="Non-meat"><span class="radio-label">Non-meat / Herbivore diet</span></label>
+                        <label class="radio-option"><input type="radio" name="meat_diet" value="No preference"><span class="radio-label">No preference</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="9">
-                    <h3 class="question-title">9. How important is it that your potential pet is already vaccinated?</h3>
+                <div class="question-card" data-question="10">
+                    <h3 class="question-title">10. How important is it that your potential pet is already vaccinated?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="vaccination" value="Very important"><span class="radio-label">Very important</span></label>
                         <label class="radio-option"><input type="radio" name="vaccination" value="Somewhat important"><span class="radio-label">Somewhat important</span></label>
                         <label class="radio-option"><input type="radio" name="vaccination" value="Not important"><span class="radio-label">Not important</span></label>
                     </div>
                 </div>
-                <div class="question-card" data-question="10">
-                    <h3 class="question-title">10. Are you open to adopting a pet with a known health condition?</h3>
+                <div class="question-card" data-question="11">
+                    <h3 class="question-title">11. Are you open to adopting a pet with a known health condition?</h3>
                     <div class="radio-options">
                         <label class="radio-option"><input type="radio" name="health_condition" value="Yes"><span class="radio-label">Yes</span></label>
                         <label class="radio-option"><input type="radio" name="health_condition" value="No"><span class="radio-label">No</span></label>
@@ -257,7 +268,7 @@
             <div class="results-container">
                 <div class="results-header">
                     <h2>Your Perfect Pet Matches</h2>
-                    <p>We found <span id="resultCount">0</span> pets that match your preferences</p>
+                    <p id="resultMessage">We found <span id="resultCount">0</span> pets that match your preferences</p>
                     <button class="btn btn-outline" onclick="retakeQuiz()" style="margin-top: 1rem;">Take Quiz Again</button>
                 </div>
                 <div id="resultsGrid"></div>
@@ -291,7 +302,7 @@
 
     <script>
         let currentQuestion = 1;
-        const totalQuestions = 10;
+        const totalQuestions = 11;
         const answers = {};
         const quizForm = document.getElementById('quizForm');
         const prevBtn = document.getElementById('prevBtn');
@@ -357,11 +368,16 @@
                 has_kids: q.children==='Yes'||q.children==='Plan to have',
                 vaccinated_important: q.vaccination!=='Not important',
                 shedding_tolerance: shed,
-                okay_with_meat_diet: q.meat_diet==='Yes',
+                meat_diet_preference: q.meat_diet==='Meat' ? 'yes' : q.meat_diet==='Non-meat' ? 'no' : 'any',
                 age_preference: age,
                 home_type: q.home_type || '',
                 health_preference: health
             };
+            // Pet type preference (hard filter)
+            if (q.pet_type && q.pet_type !== 'No preference') {
+                const typeMap = {Dog: 2, Cat: 1, Bird: 0, Rabbit: 3};
+                mapped.pet_type = typeMap[q.pet_type];
+            }
             // Gender preference (hard filter)
             if (q.gender && q.gender !== 'No preference') {
                 mapped.gender_preference = q.gender;
@@ -389,8 +405,13 @@
             document.getElementById('resultCount').textContent = pets.length;
             grid.innerHTML = '';
             grid.className = 'pet-cards-grid';
-            if (!pets.length) { grid.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">No pets found matching your criteria.</p>'; }
-            else { pets.forEach(pet => { grid.innerHTML += createPetCard(pet); }); }
+            if (!pets.length) {
+                grid.innerHTML = '';
+            }
+            else {
+                document.getElementById('resultCount').textContent = pets.length;
+                pets.forEach(pet => { grid.innerHTML += createPetCard(pet); });
+            }
             document.getElementById('resultsSection').style.display = 'block';
             window.scrollTo({top:0,behavior:'smooth'});
         }
