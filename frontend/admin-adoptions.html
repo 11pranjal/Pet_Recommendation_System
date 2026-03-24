@@ -77,6 +77,33 @@
                 <p>Loading adoption requests...</p>
             </div>
         </div>
+
+        <!-- Adopted Pets Section -->
+        <div style="margin-top: 2rem;">
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="section-title" style="font-size: 1.25rem;">Adopted Pets (<span id="adoptedCount">0</span>)</h2>
+                <button class="btn btn-secondary" onclick="toggleAdoptedSection()" id="toggleAdoptedBtn" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">Show</button>
+            </div>
+            <div id="adoptedPetsSection" style="display: none;">
+                <div class="data-table">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--bg-main); border-bottom: 2px solid var(--border);">
+                                <th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">Pet</th>
+                                <th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">Type</th>
+                                <th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">Adopter</th>
+                                <th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">Email</th>
+                                <th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">Phone</th>
+                                <th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">Address</th>
+                                <th style="padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">Adopted On</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adoptedPetsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal for Viewing Details -->
@@ -366,6 +393,50 @@
                 closeModal();
             }
         });
+
+        // Toggle adopted pets section
+        let adoptedSectionVisible = false;
+        function toggleAdoptedSection() {
+            adoptedSectionVisible = !adoptedSectionVisible;
+            document.getElementById('adoptedPetsSection').style.display = adoptedSectionVisible ? 'block' : 'none';
+            document.getElementById('toggleAdoptedBtn').textContent = adoptedSectionVisible ? 'Hide' : 'Show';
+            if (adoptedSectionVisible) loadAdoptedPets();
+        }
+
+        // Load adopted pets with full adopter details
+        async function loadAdoptedPets() {
+            try {
+                const response = await fetch('/api/admin/adopted-pets', { credentials: 'include' });
+                const data = await response.json();
+                const tbody = document.getElementById('adoptedPetsTableBody');
+                document.getElementById('adoptedCount').textContent = data.adopted_pets ? data.adopted_pets.length : 0;
+
+                if (!data.ok || !data.adopted_pets.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="padding:2rem;text-align:center;color:var(--text-muted);">No adopted pets yet</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.adopted_pets.map(pet => `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding:0.75rem 1rem;font-weight:600;">${pet.pet_name} <span style="color:var(--text-muted);font-weight:400;">#${pet.pet_id}</span></td>
+                        <td style="padding:0.75rem 1rem;">${pet.pet_type || '-'}</td>
+                        <td style="padding:0.75rem 1rem;">${pet.adopter_full_name}</td>
+                        <td style="padding:0.75rem 1rem;"><a href="mailto:${pet.adopter_email}" style="color:var(--primary);">${pet.adopter_email}</a></td>
+                        <td style="padding:0.75rem 1rem;">${pet.adopter_phone || '-'}</td>
+                        <td style="padding:0.75rem 1rem;">${pet.adopter_address || '-'}</td>
+                        <td style="padding:0.75rem 1rem;">${pet.adopted_at ? new Date(pet.adopted_at).toLocaleDateString() : '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading adopted pets:', error);
+            }
+        }
+
+        // Load adopted count on page load
+        fetch('/api/admin/adopted-pets', { credentials: 'include' })
+            .then(r => r.json())
+            .then(data => { if (data.ok) document.getElementById('adoptedCount').textContent = data.adopted_pets.length; })
+            .catch(() => {});
 
         // Check auth on page load
         window.addEventListener('DOMContentLoaded', checkAuth);

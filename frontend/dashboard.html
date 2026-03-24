@@ -299,6 +299,10 @@
             </div>
             <div class="user-stats">
                 <div class="stat-item">
+                    <div class="stat-val" id="adoptedCount" style="color: #22c55e;">0</div>
+                    <div class="stat-lbl">Adopted</div>
+                </div>
+                <div class="stat-item">
                     <div class="stat-val" id="adoptionCount">0</div>
                     <div class="stat-lbl">Requests</div>
                 </div>
@@ -329,6 +333,10 @@
                 <a href="browse.html" class="btn btn-outline">Browse All</a>
             </div>
         </div>
+
+        <!-- Adopted Pets Section -->
+        <div class="section-label" id="adoptedLabel" style="display: none;">My Adopted Pets</div>
+        <div id="adoptedPetsSection"></div>
 
         <!-- Favorites Section -->
         <div class="section-label">My Favorites</div>
@@ -386,12 +394,52 @@
         }
 
         function displayAdoptionRequests(requests) {
+            // Separate adopted (approved) from other requests
+            const adopted = requests.filter(r => r.status === 'approved');
+            const others = requests.filter(r => r.status !== 'approved');
+
+            // Show adopted pets section
+            document.getElementById('adoptedCount').textContent = adopted.length;
+            const adoptedSection = document.getElementById('adoptedPetsSection');
+            const adoptedLabel = document.getElementById('adoptedLabel');
+            if (adopted.length) {
+                adoptedLabel.style.display = '';
+                adoptedSection.innerHTML = '<div class="favorites-grid">' + adopted.map(req => `
+                    <div class="fav-card">
+                        <div class="fav-card-top" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
+                            <span class="fav-type-badge" style="background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);border:1px solid rgba(255,255,255,0.2);">${req.pet_type}</span>
+                            <div class="fav-card-avatar-wrap"><div class="fav-card-avatar-ph">${getPetEmoji(req.pet_type)}</div></div>
+                        </div>
+                        <div class="fav-card-body">
+                            <div class="fav-card-title">
+                                <h3>${req.pet_name}</h3>
+                                <span class="fav-breed" style="color: #22c55e;">Adopted</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                <p>Adopted on ${new Date(req.updated_at).toLocaleDateString()}</p>
+                                ${req.message ? `<p style="margin-top:0.25rem;font-style:italic;">"${req.message}"</p>` : ''}
+                            </div>
+                            <div class="fav-actions" style="margin-top: 0.75rem;">
+                                <a href="pet-details.html?id=${req.pet_id}" class="fav-btn fav-btn-view">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('') + '</div>';
+            } else {
+                adoptedLabel.style.display = 'none';
+                adoptedSection.innerHTML = '';
+            }
+
+            // Show remaining requests (pending/rejected)
             const c = document.getElementById('adoptionRequests');
-            if (!requests.length) {
-                c.innerHTML = '<div class="empty-state"><p>No adoption requests yet.</p><p>Start by taking the quiz or browsing pets!</p></div>';
+            if (!others.length) {
+                c.innerHTML = '<div class="empty-state"><p>No pending adoption requests.</p><p>Start by taking the quiz or browsing pets!</p></div>';
                 return;
             }
-            c.innerHTML = requests.map(req => `
+            c.innerHTML = others.map(req => `
                 <div class="pet-card">
                     <div class="pet-header">
                         <div class="pet-title"><h3>${req.pet_name}</h3><div class="pet-breed">${req.pet_type}</div></div>
