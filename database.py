@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from pet_image_mapper import get_pet_image_url
 
 db = SQLAlchemy()
 
@@ -23,6 +24,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     address = db.Column(db.String(200))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     
@@ -48,6 +50,7 @@ class User(UserMixin, db.Model):
             'phone': self.phone,
             'address': self.address,
             'is_admin': self.is_admin,
+            'email_verified': self.email_verified,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_login': self.last_login.isoformat() if self.last_login else None
         }
@@ -129,6 +132,12 @@ class AdoptedPet(db.Model):
             'pet_type': self.pet_type,
             'adopted_by_user_id': self.adopted_by_user_id,
             'adopted_by': self.adopter.username,
+            'adopter_full_name': self.adopter.full_name or self.adopter.username,
+            'adopter_email': self.adopter.email,
+            'adopter_phone': self.adopter.phone or '',
+            'adopter_address': self.adopter.address or '',
+            'adoption_request_id': self.adoption_request_id,
+            'adoption_message': self.adoption_request.message if self.adoption_request else '',
             'adopted_at': self.adopted_at.isoformat() if self.adopted_at else None
         }
     
@@ -153,15 +162,17 @@ class HiddenPet(db.Model):
 
 
 class CustomPet(db.Model):
-    """Custom pets added by admin (not from CSV)"""
+    """Custom pets added by admin — IDs continue from max dataset PetID (1985)"""
     __tablename__ = 'custom_pets'
     
+    # Dataset max PetID — new custom pets start from this + 1
+    DATASET_MAX_ID = 1985
+    
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    pet_id = db.Column(db.Integer, unique=True, nullable=False)  # Globally unique, continues from 1986+
     type = db.Column(db.String(50), nullable=False)
     breed = db.Column(db.String(100), nullable=False)
-    age_years = db.Column(db.Integer, nullable=False)
-    age_months = db.Column(db.Integer, default=0)
+    age_months = db.Column(db.Integer, nullable=False)        # Total months (matches dataset format)
     size = db.Column(db.String(20), nullable=False)
     color = db.Column(db.String(50), nullable=False)
     gender = db.Column(db.String(10), nullable=False)
@@ -170,24 +181,42 @@ class CustomPet(db.Model):
     health_condition = db.Column(db.String(50), default='Good')
     kid_friendly = db.Column(db.Boolean, default=True)
     energy_level = db.Column(db.String(20), default='Moderate')
+    food_preference = db.Column(db.Text, default='Non-Vegetarian')
+    meat_consumption = db.Column(db.Boolean, default=True)
+    shedding_level = db.Column(db.Integer, default=2)           # 0-5
+    has_previous_owner = db.Column(db.Boolean, default=False)
+    days_in_shelter = db.Column(db.Integer, default=0)
     description = db.Column(db.Text)
     pet_characteristics = db.Column(db.Text)
     fee = db.Column(db.Float, default=100.0)
+    image_path = db.Column(db.String(300))  # Admin-uploaded image path (relative to uploads/pets/)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by_admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     admin = db.relationship('User', backref='custom_pets', lazy=True)
     
+    @staticmethod
+    def next_pet_id():
+        """Get the next available pet_id (continues from dataset max)"""
+        last = db.session.query(db.func.max(CustomPet.pet_id)).scalar()
+        return max(CustomPet.DATASET_MAX_ID, last or CustomPet.DATASET_MAX_ID) + 1
+    
+    @property
+    def name(self):
+        """Auto-generated name: 'Breed #PetID'"""
+        return f"{self.breed} #{self.pet_id}"
+    
     def to_dict(self):
-        """Convert to dictionary matching the format from CSV pets"""
+        """Convert to dictionary matching the format from CSV pets exactly"""
         return {
-            'pet_id': f'custom_{self.id}',  # Prefix to distinguish from CSV pets
-            'id': f'custom_{self.id}',
+            'pet_id': self.pet_id,
+            'id': self.pet_id,
             'name': self.name,
             'type': self.type,
             'breed': self.breed,
-            'age_years': self.age_years,
             'age_months': self.age_months,
+            'age_years': self.age_months // 12,
+            'age_remaining_months': self.age_months % 12,
             'size': self.size,
             'color': self.color,
             'gender': self.gender,
@@ -197,12 +226,19 @@ class CustomPet(db.Model):
             'health_condition': self.health_condition,
             'kid_friendly': self.kid_friendly,
             'energy_level': self.energy_level,
-            'pet_characteristics': self.description or '',
-            'description': self.description or '',
+            'food_preference': self.food_preference,
+            'meat_consumption': self.meat_consumption,
+            'shedding_level': self.shedding_level,
+            'has_previous_owner': self.has_previous_owner,
+            'days_in_shelter': self.days_in_shelter,
+            'pet_characteristics': self.pet_characteristics or '',
+            'description': self.description or f"A {self.energy_level.lower()} energy {self.breed} looking for a loving home.",
             'fee': self.fee,
-            'is_custom': True
+            'is_custom': True,
+            'image_url': (f"/uploads/pets/{self.image_path}" if self.image_path
+                          else get_pet_image_url(self.breed, self.color, self.size, self.age_months, self.pet_id))
         }
     
     def __repr__(self):
-        return f'<CustomPet {self.name}>'
+        return f'<CustomPet #{self.pet_id} {self.breed}>'
 
