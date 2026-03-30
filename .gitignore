@@ -22,3 +22,6 @@ evaluation_results/*.csv
 
 # Jupyter notebooks
 *.ipynb
+
+# Windows Zone.Identifier metadata
+*:Zone.Identifier
