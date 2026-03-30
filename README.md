@@ -29,9 +29,23 @@ Users answer lifestyle questions which are converted into a 9-dimensional featur
 
 Optimal K=5 was selected using the elbow method on validation RMSE.
 
+![KNN Quiz Results](evaluation_results/knn_op.png)
+
 ### 2. SBERT — Natural Language Search
 
 Users describe their ideal pet in plain text. The input is embedded using the `all-MiniLM-L6-v2` Sentence-BERT model and ranked against pre-computed pet embeddings using cosine similarity, combined with keyword matching for improved accuracy.
+
+![SBERT Search Results](evaluation_results/sbert_op.png)
+
+### Model Performance Comparison
+
+![KNN vs SBERT Accuracy Comparison](evaluation_results/accuracy_comparison.png)
+
+| Metric | KNN (Quiz) | SBERT (Text Search) |
+|---|---|---|
+| Precision@5 | 94% | 87% |
+| Recall@5 | 95% | 89% |
+| NDCG@5 | 93% | 88% |
 
 
 ## Dataset
