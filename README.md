@@ -129,6 +129,12 @@ git clone https://github.com/Shilu-Poudel/Pet-Recommendation-System.git
 cd Pet-Recommendation-System
 ```
 
+If you already have the repo cloned, pull the latest changes:
+
+```bash
+git pull origin main
+```
+
 ### 2. Create a virtual environment
 
 ```bash
