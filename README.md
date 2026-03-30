@@ -1,6 +1,6 @@
 # Pet Recommendation System
 
-A machine learning based pet recommendation system that matches users with suitable pets using two ML approaches - a structured quiz powered by K-Nearest Neighbors (KNN) and a natural language search powered by Sentence-BERT (SBERT). The system is deployed as a web application with user authentication and an admin panel.
+A machine learning-powered pet recommendation system that matches users with suitable pets using two ML approaches — a structured quiz powered by **K-Nearest Neighbors (KNN)** and a natural language search powered by **Sentence-BERT (SBERT)**. Built as a full-stack web application with user authentication and an admin panel.
 
 
 ## Technology Stack
@@ -16,9 +16,9 @@ A machine learning based pet recommendation system that matches users with suita
 
 ## Recommendation Approaches
 
-### 1. KNN - Quiz-Based Recommendations
+### 1. KNN — Quiz-Based Recommendations
 
-Users answer lifestyle questions which are converted into a feature vector. KNN finds the nearest matching pets using Euclidean distance.
+Users answer lifestyle questions which are converted into a 9-dimensional feature vector. KNN finds the nearest matching pets using Euclidean distance with distance-weighted scoring.
 
 **Hard constraints applied before ranking:**
 - Meat diet preference
@@ -27,23 +27,11 @@ Users answer lifestyle questions which are converted into a feature vector. KNN 
 
 **Type-diversity:** Results guarantee the best match from each eligible pet type to prevent dataset distribution skew from dominating results.
 
-| Metric | Score |
-|---|---|
-| Precision@5 | 94% |
-| Recall@5 | 95% |
-| NDCG@5 | 93% |
-
 Optimal K=5 was selected using the elbow method on validation RMSE.
 
-### 2. SBERT - Natural Language Search
+### 2. SBERT — Natural Language Search
 
-Users describe their ideal pet in plain text. The input is embedded using the `all-MiniLM-L6-v2` Sentence-BERT model and ranked against pre-computed pet embeddings using cosine similarity.
-
-| Metric | Score |
-|---|---|
-| Precision@5 | 87% |
-| Recall@5 | 89% |
-| NDCG@5 | 88% |
+Users describe their ideal pet in plain text. The input is embedded using the `all-MiniLM-L6-v2` Sentence-BERT model and ranked against pre-computed pet embeddings using cosine similarity, combined with keyword matching for improved accuracy.
 
 
 ## Dataset
@@ -59,7 +47,15 @@ Users describe their ideal pet in plain text. The input is embedded using the `a
 
 **Breeds:** Domestic Shorthair, Persian, German Shepherd, Retriever, Labrador, Pug, Spitz, Parakeet, Rabbit
 
-**Features used for KNN:** Size, Energy Level, Kid-Friendliness, Vaccination Status, Shedding Level, Meat Diet, Age, Weight
+**KNN Features:** Size, Energy Level, Kid-Friendliness, Vaccination Status, Shedding Level, Meat Diet, Age, Weight, Health Condition
+
+### Breed Distribution
+
+![Dataset Distribution by Breed](evaluation_results/dataset_breed_distribution.png)
+
+### Feature Correlation Heatmap
+
+![Feature Correlation Heatmap](evaluation_results/correlation_heatmap.png)
 
 
 ## System Architecture
@@ -80,27 +76,33 @@ Results --> Confidence Score --> Web Interface --> Adoption Request
 ## Project Structure
 
 ```
-Pet-Adoption/
-├── app_complete.py                # Flask web application
-├── database.py                    # Database models (User, AdoptionRequest, Favorite)
-├── pet_image_mapper.py            # Pet image resolver
+Pet-Recommendation-System/
+├── app_complete.py                # Flask web application (entry point)
+├── database.py                    # SQLAlchemy models
+├── pet_image_mapper.py            # Deterministic pet-to-image mapping
+├── setup_admin.py                 # Admin user management CLI
 ├── requirements.txt
 │
 ├── backend/
 │   ├── recommendation_engine.py   # KNN + SBERT inference with filtering
 │   └── enhanced_training.py       # Model training pipeline
 │
-├── frontend/                      # HTML/CSS pages
+├── frontend/                      # HTML/CSS/JS pages (no build step)
+│   ├── index.html                 # Landing page
+│   ├── quiz.html                  # KNN quiz interface
+│   ├── search.html                # SBERT text search
+│   ├── browse.html                # Pet listing with filters
+│   ├── dashboard.html             # User dashboard
+│   ├── admin-dashboard.html       # Admin panel
+│   └── ...
 │
-├── model/                         # Trained model files (gitignored)
-│   ├── knn_model.joblib
-│   ├── knn_scaler.joblib
-│   ├── knn_X_scaled.npy
-│   ├── pets_database.pkl
-│   ├── sbert_embeddings.npy
-│   └── sbert_model/
+├── model/                         # Trained model artifacts (auto-generated)
 │
-└── dataset/                       # Training CSVs (gitignored)
+├── dataset/                       # Training CSV files
+│
+├── petimage/                      # Pet images for display
+│
+└── evaluation_results/            # ML evaluation charts
 ```
 
 
@@ -117,8 +119,22 @@ cd Pet-Recommendation-System
 
 ```bash
 python -m venv venv
-source venv/bin/activate        # On Windows: venv\Scripts\activate
 ```
+
+Activate it:
+
+- **Linux / macOS:**
+  ```bash
+  source venv/bin/activate
+  ```
+- **Windows (Command Prompt):**
+  ```cmd
+  venv\Scripts\activate
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  venv\Scripts\Activate.ps1
+  ```
 
 ### 3. Install dependencies
 
@@ -146,7 +162,7 @@ Place the dataset CSV files in the `dataset/` folder, then run:
 python backend/enhanced_training.py
 ```
 
-This trains the KNN model, generates SBERT embeddings, and saves all model files to the `model/` directory.
+This trains the KNN model, generates SBERT embeddings, and saves all artifacts to the `model/` directory.
 
 ### 6. Run the application
 
@@ -154,10 +170,18 @@ This trains the KNN model, generates SBERT embeddings, and saves all model files
 python app_complete.py
 ```
 
-The application will be available at `http://localhost:5000`
+The application will be available at `http://localhost:5000`.
+
+> **Note:** The SQLite database is created automatically on first run — no manual database setup is required.
+
+### 7. Create an admin user (optional)
+
+```bash
+python setup_admin.py create
+```
 
 
-## Web Application Features
+## Features
 
 ### User
 - Register and login with email verification
@@ -171,6 +195,7 @@ The application will be available at `http://localhost:5000`
 - Dashboard with system statistics
 - Add, edit, delete, and hide pets
 - Manage users and adoption requests
+- Approve or reject adoptions with contact details
 
 
 ## API Endpoints
@@ -200,7 +225,7 @@ The application will be available at `http://localhost:5000`
 | Method | Endpoint | Description |
 |---|---|---|
 | POST | `/api/adopt` | Submit adoption request |
-| GET | `/api/adoptions/my` | Get current user's requests |
+| GET | `/api/adoptions/my` | Get current user's adoption requests |
 
 
 ## License
