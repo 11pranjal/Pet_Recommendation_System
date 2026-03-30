@@ -170,10 +170,22 @@ pip install -r requirements.txt
 
 Create a `.env` file in the root directory:
 
+- **Linux / macOS / Git Bash:**
+  ```bash
+  touch .env
+  ```
+- **Windows (Command Prompt):**
+  ```cmd
+  echo. > .env
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  New-Item .env
+  ```
+
+Then open the `.env` file and add the following:
+
 ```
-SECRET_KEY=your_secret_key_here
-MAIL_SERVER=smtp.gmail.com
-MAIL_PORT=587
 MAIL_USERNAME=your_email@gmail.com
 MAIL_PASSWORD=your_app_password
 ```
