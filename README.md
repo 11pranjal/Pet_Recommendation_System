@@ -149,11 +149,11 @@ Activate it:
   ```
 - **Windows (Command Prompt):**
   ```cmd
-  venv\Scripts\activate
+  source venv\Scripts\activate
   ```
 - **Windows (PowerShell):**
   ```powershell
-  venv\Scripts\Activate.ps1
+  source venv\Scripts\Activate.ps1
   ```
 
 ### 3. Install dependencies
