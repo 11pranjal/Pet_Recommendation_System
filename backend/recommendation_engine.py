@@ -109,6 +109,12 @@ class PetRecommendationEngine:
         gender_pref = user_answers.get('gender_preference')
         if gender_pref and gender_pref != 'No preference':
             hard_filters['gender'] = gender_pref
+
+        # Size preference (hard filter)
+        size_pref = user_answers.get('size_preference')
+        if size_pref is not None:
+            size_map = {0: 'Large', 1: 'Medium', 2: 'Small'}
+            hard_filters['size'] = size_map.get(size_pref)
         
         # --- Filter eligible pets, then rank by feature distance ---
         candidates = []
@@ -123,6 +129,9 @@ class PetRecommendationEngine:
                     continue
             if 'gender' in hard_filters:
                 if pet.get('gender') != hard_filters['gender']:
+                    continue
+            if 'size' in hard_filters:
+                if pet.get('size') != hard_filters['size']:
                     continue
 
             # Safety: skip if KNN features not available for this index
