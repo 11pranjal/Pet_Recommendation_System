@@ -108,7 +108,8 @@ def create_admin_user():
                 username=username,
                 email=email,
                 full_name=full_name if full_name else None,
-                is_admin=True
+                is_admin=True,
+                email_verified=True
             )
             user.set_password(password)
             

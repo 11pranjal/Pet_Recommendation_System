@@ -128,6 +128,24 @@ def verify_reset_token(token, max_age=3600):
     except (SignatureExpired, BadSignature):
         return None
 
+def validate_nepal_phone(phone):
+    """Validate Nepal phone number.
+    Must be exactly 10 digits (with optional +977 country code).
+    Returns cleaned 10-digit number or None if invalid.
+    """
+    if not phone:
+        return None
+    cleaned = re.sub(r'[\s\-\(\)]', '', phone.strip())
+    # Remove country code if present
+    if cleaned.startswith('+977'):
+        cleaned = cleaned[4:]
+    elif cleaned.startswith('977') and len(cleaned) > 10:
+        cleaned = cleaned[3:]
+    # Must be exactly 10 digits starting with 96, 97, or 98
+    if re.match(r'^(96|97|98)\d{8}$', cleaned):
+        return cleaned
+    return None
+
 def send_email(to_email, subject, html_body):
     """Send an email via Gmail SMTP"""
     try:
@@ -211,6 +229,80 @@ def send_reset_email(user_email, username, token):
     </div>
     """
     return send_email(user_email, "Reset Your Password — Adoptly", html)
+
+def send_adoption_request_notification(admin_email, user_name, user_email_addr, pet_name, message):
+    """Notify admin when a new adoption request is submitted"""
+    html = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #f4f1ec; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="display: inline-block; background: linear-gradient(135deg, #4a7560, #7daa8e); padding: 14px; border-radius: 14px; margin-bottom: 12px;">
+                <span style="font-size: 28px; color: white;">&#128062;</span>
+            </div>
+            <h1 style="color: #2c3e36; font-size: 22px; margin: 0;">New Adoption Request</h1>
+        </div>
+        <div style="background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);">
+            <p style="color: #2c3e36; font-size: 15px; margin: 0 0 16px;">A new adoption request has been submitted:</p>
+            <table style="width: 100%; font-size: 14px; color: #5f7268;">
+                <tr><td style="padding: 6px 0; font-weight: 600;">Pet:</td><td>{pet_name}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: 600;">Requested by:</td><td>{user_name}</td></tr>
+                <tr><td style="padding: 6px 0; font-weight: 600;">Email:</td><td>{user_email_addr}</td></tr>
+                {f'<tr><td style="padding: 6px 0; font-weight: 600;">Message:</td><td>{message}</td></tr>' if message else ''}
+            </table>
+            <p style="color: #8fa398; font-size: 12px; text-align: center; margin: 20px 0 0;">
+                Log in to the admin panel to review this request.
+            </p>
+        </div>
+        <p style="color: #8fa398; font-size: 11px; text-align: center; margin-top: 16px;">
+            &copy; Adoptly — Find your perfect companion
+        </p>
+    </div>
+    """
+    return send_email(admin_email, f"New Adoption Request — {pet_name}", html)
+
+def send_adoption_status_notification(user_email_addr, username, pet_name, status):
+    """Notify user when their adoption request is approved or rejected"""
+    if status == 'approved':
+        emoji = "&#127881;"
+        title = "Adoption Approved!"
+        color = "#22c55e"
+        body = f"""
+            <p style="color: #5f7268; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+                Great news! Your adoption request for <strong>{pet_name}</strong> has been <strong style="color: #22c55e;">approved</strong>!
+            </p>
+            <p style="color: #5f7268; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+                Please check your dashboard for further details. We will contact you soon to arrange the adoption process.
+            </p>
+        """
+    else:
+        emoji = "&#128532;"
+        title = "Adoption Request Update"
+        color = "#ef4444"
+        body = f"""
+            <p style="color: #5f7268; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+                We're sorry, but your adoption request for <strong>{pet_name}</strong> was <strong style="color: #ef4444;">not approved</strong> at this time.
+            </p>
+            <p style="color: #5f7268; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+                Don't worry — there are many other pets looking for a loving home! Visit your dashboard to explore more options.
+            </p>
+        """
+    html = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #f4f1ec; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="display: inline-block; background: linear-gradient(135deg, #4a7560, #7daa8e); padding: 14px; border-radius: 14px; margin-bottom: 12px;">
+                <span style="font-size: 28px; color: white;">{emoji}</span>
+            </div>
+            <h1 style="color: #2c3e36; font-size: 22px; margin: 0;">{title}</h1>
+        </div>
+        <div style="background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);">
+            <p style="color: #2c3e36; font-size: 15px; margin: 0 0 8px;">Hi <strong>{username}</strong>,</p>
+            {body}
+        </div>
+        <p style="color: #8fa398; font-size: 11px; text-align: center; margin-top: 16px;">
+            &copy; Adoptly — Find your perfect companion
+        </p>
+    </div>
+    """
+    return send_email(user_email_addr, f"{title} — {pet_name}", html)
 
 # Helper function to get adopted pet IDs
 def get_adopted_pet_ids():
@@ -425,12 +517,20 @@ def api_register():
         if User.query.filter_by(email=email).first():
             return jsonify({"ok": False, "message": "Email already registered"}), 400
         
+        # Validate phone number (Nepal format)
+        phone = data.get("phone", "").strip()
+        if phone:
+            validated_phone = validate_nepal_phone(phone)
+            if not validated_phone:
+                return jsonify({"ok": False, "message": "Please enter a valid Nepal phone number (e.g. 98XXXXXXXX)"}), 400
+            phone = validated_phone
+
         # Create new user (email not verified yet)
         user = User(
             username=username,
             email=email,
             full_name=full_name,
-            phone=data.get("phone", ""),
+            phone=phone,
             address=data.get("address", ""),
             email_verified=False
         )
@@ -655,7 +755,14 @@ def update_profile():
         if 'full_name' in data:
             current_user.full_name = data['full_name'].strip()
         if 'phone' in data:
-            current_user.phone = data['phone'].strip()
+            phone = data['phone'].strip()
+            if phone:
+                validated_phone = validate_nepal_phone(phone)
+                if not validated_phone:
+                    return jsonify({"ok": False, "message": "Please enter a valid Nepal phone number (e.g. 98XXXXXXXX)"}), 400
+                current_user.phone = validated_phone
+            else:
+                current_user.phone = ''
         if 'address' in data:
             current_user.address = data['address'].strip()
         
@@ -886,13 +993,51 @@ def submit_adoption_request():
         
         db.session.add(adoption_request)
         db.session.commit()
-        
+
+        # Notify all admin users via email
+        admins = User.query.filter_by(is_admin=True).all()
+        user_name = current_user.full_name or current_user.username
+        for admin in admins:
+            if admin.email:
+                send_adoption_request_notification(
+                    admin.email, user_name, current_user.email, pet_name, message
+                )
+
         return jsonify({
             "ok": True,
             "message": "Adoption request submitted successfully!",
             "request_id": adoption_request.id
         })
     
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
+
+@app.route("/api/adoptions/<int:request_id>", methods=["PUT"])
+@login_required
+def update_adoption_request(request_id):
+    """Update the message on a pending adoption request"""
+    try:
+        adoption_request = AdoptionRequest.query.get(request_id)
+        if not adoption_request:
+            return jsonify({"ok": False, "message": "Request not found"}), 404
+
+        if adoption_request.user_id != current_user.id:
+            return jsonify({"ok": False, "message": "Unauthorized"}), 403
+
+        if adoption_request.status != 'pending':
+            return jsonify({"ok": False, "message": "Can only edit pending requests"}), 400
+
+        data = request.json or {}
+        new_message = data.get("message", "").strip()
+        if not new_message:
+            return jsonify({"ok": False, "message": "Message cannot be empty"}), 400
+
+        adoption_request.message = new_message
+        db.session.commit()
+
+        return jsonify({"ok": True, "message": "Request updated successfully"})
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
@@ -1123,17 +1268,38 @@ def admin_update_adoption(request_id):
         adoption_request.updated_at = datetime.utcnow()
         
         db.session.commit()
-        
-        message = f"Adoption request {new_status}"
+
+        # Send email notification to the user
+        requester = User.query.get(adoption_request.user_id)
+        if requester and requester.email and new_status in ('approved', 'rejected'):
+            send_adoption_status_notification(
+                requester.email,
+                requester.full_name or requester.username,
+                adoption_request.pet_name,
+                new_status
+            )
+            # Also notify other rejected users if pet was approved
+            if new_status == 'approved':
+                for req in other_requests:
+                    other_user = User.query.get(req.user_id)
+                    if other_user and other_user.email:
+                        send_adoption_status_notification(
+                            other_user.email,
+                            other_user.full_name or other_user.username,
+                            req.pet_name,
+                            'rejected'
+                        )
+
+        resp_message = f"Adoption request {new_status}"
         if new_status == 'approved':
-            message += f" and pet marked as adopted. {len(other_requests)} other pending requests were automatically rejected."
-        
+            resp_message += f" and pet marked as adopted. {len(other_requests)} other pending requests were automatically rejected."
+
         return jsonify({
             "ok": True,
-            "message": message,
+            "message": resp_message,
             "request": adoption_request.to_dict()
         })
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "message": f"Error: {str(e)}"}), 500
