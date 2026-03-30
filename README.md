@@ -147,13 +147,17 @@ Activate it:
   ```bash
   source venv/bin/activate
   ```
+- **Windows (Git Bash):**
+  ```bash
+  source venv/Scripts/activate
+  ```
 - **Windows (Command Prompt):**
   ```cmd
-  source venv\Scripts\activate
+  venv\Scripts\activate
   ```
 - **Windows (PowerShell):**
   ```powershell
-  source venv\Scripts\Activate.ps1
+  venv\Scripts\Activate.ps1
   ```
 
 ### 3. Install dependencies
