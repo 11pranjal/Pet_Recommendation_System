@@ -17,8 +17,8 @@ petimage/
 # Archived old scripts
 _archive/
 
-# Generated evaluation outputs
-evaluation_results/
+# Generated evaluation CSV outputs
+evaluation_results/*.csv
 
 # Jupyter notebooks
 *.ipynb
