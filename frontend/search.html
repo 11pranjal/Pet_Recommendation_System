@@ -96,10 +96,10 @@
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             <form id="adoptionForm">
-                <input type="hidden" id="adopt_pet_id" name="pet_id"><input type="hidden" id="adopt_pet_name" name="pet_name">
+                <input type="hidden" id="adopt_pet_id" name="pet_id"><input type="hidden" id="adopt_pet_name" name="pet_name"><input type="hidden" id="adopt_pet_type" name="pet_type">
                 <div class="form-group"><label for="user_name">Your Name *</label><input type="text" id="user_name" name="user_name" required></div>
                 <div class="form-group"><label for="user_email">Email *</label><input type="email" id="user_email" name="user_email" required></div>
-                <div class="form-group"><label for="user_phone">Phone *</label><input type="tel" id="user_phone" name="user_phone" required></div>
+                <div class="form-group"><label for="user_phone">Phone *</label><input type="tel" id="user_phone" name="user_phone" required placeholder="98XXXXXXXX" pattern="(\+?977[- ]?)?\d{10}" title="Enter a valid Nepal phone number (e.g. 9841234567)"></div>
                 <div class="form-group"><label for="user_address">Address</label><input type="text" id="user_address" name="user_address"></div>
                 <div class="form-group"><label for="message">Why do you want to adopt this pet?</label><textarea id="message" name="message" rows="4" style="width:100%;padding:0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text);font-family:inherit;"></textarea></div>
                 <div style="text-align:center;"><button type="submit" class="btn btn-primary btn-large">Submit Adoption Request</button></div>
@@ -131,7 +131,7 @@
             document.getElementById('resultCount').textContent = pets.length;
             grid.innerHTML = '';
             grid.className = 'pet-cards-grid';
-            if (!pets.length) { grid.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">No matching pets found. Try different keywords.</p>'; }
+            if (!pets.length) { grid.innerHTML = ''; }
             else { pets.forEach(pet => { grid.innerHTML += createPetCard(pet); }); }
             document.getElementById('resultsSection').style.display = 'block';
             document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
@@ -183,15 +183,43 @@
         function toggleFavorite(petId) {
             fetch(`/api/favorites/${petId}`,{method:'POST',credentials:'include'}).then(r=>r.json()).then(d=>{if(d.ok){const btn=event.target.closest('.btn-favorite');btn.classList.toggle('favorited');}}).catch(()=>{});
         }
-        function openAdoptionModal(petId,petName,petType) { document.getElementById('adopt_pet_id').value=petId; document.getElementById('adopt_pet_name').value=petName; document.getElementById('modalPetName').textContent=petName; document.getElementById('adoptionModal').classList.add('active'); }
+        function openAdoptionModal(petId,petName,petType) { document.getElementById('adopt_pet_id').value=petId; document.getElementById('adopt_pet_name').value=petName; document.getElementById('adopt_pet_type').value=petType; document.getElementById('modalPetName').textContent=petName; document.getElementById('adoptionModal').classList.add('active'); }
         function closeModal() { document.getElementById('adoptionModal').classList.remove('active'); }
         function viewPetDetails(petId) { window.location.href=`pet-details.html?id=${petId}`; }
+
+        function isValidNepalPhone(phone) {
+            let cleaned = phone.replace(/[\s\-\(\)]/g, '');
+            if (cleaned.startsWith('+977')) cleaned = cleaned.slice(4);
+            else if (cleaned.startsWith('977') && cleaned.length > 10) cleaned = cleaned.slice(3);
+            return /^(96|97|98)\d{8}$/.test(cleaned);
+        }
+
+        // Live phone validation with red border
+        document.getElementById('user_phone').addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val && !isValidNepalPhone(val)) {
+                this.style.border = '2px solid #ef4444';
+                this.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.1)';
+            } else {
+                this.style.border = '';
+                this.style.boxShadow = '';
+            }
+        });
 
         document.getElementById('adoptionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const fd = new FormData(e.target);
+            const phone = fd.get('user_phone') || '';
+            if (!isValidNepalPhone(phone)) {
+                const phoneInput = document.getElementById('user_phone');
+                phoneInput.style.border = '2px solid #ef4444';
+                phoneInput.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.1)';
+                phoneInput.focus();
+                alert('Please enter a valid Nepal phone number (e.g. 9841234567)');
+                return;
+            }
             try {
-                const r = await fetch('/api/adopt',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({pet_id:parseInt(fd.get('pet_id')),pet_name:fd.get('pet_name'),user_name:fd.get('user_name'),user_email:fd.get('user_email'),user_phone:fd.get('user_phone'),user_address:fd.get('user_address'),message:fd.get('message')})});
+                const r = await fetch('/api/adopt',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({pet_id:parseInt(fd.get('pet_id')),pet_name:fd.get('pet_name'),pet_type:fd.get('pet_type'),user_name:fd.get('user_name'),user_email:fd.get('user_email'),user_phone:fd.get('user_phone'),user_address:fd.get('user_address'),message:fd.get('message')})});
                 const data = await r.json();
                 if (data.ok) { alert('Adoption request submitted successfully!'); closeModal(); e.target.reset(); }
                 else { alert('Error: '+data.message); }

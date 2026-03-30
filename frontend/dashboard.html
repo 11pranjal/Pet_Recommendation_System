@@ -334,19 +334,25 @@
             </div>
         </div>
 
-        <!-- Adopted Pets Section -->
-        <div class="section-label" id="adoptedLabel" style="display: none;">My Adopted Pets</div>
-        <div id="adoptedPetsSection"></div>
+        <!-- Tab Buttons -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <button class="btn btn-primary tab-btn active" id="tabAdopted" onclick="switchTab('adopted')" style="border-radius: 20px; padding: 0.5rem 1.25rem; font-size: 0.9rem;">Adopted Pets</button>
+            <button class="btn btn-outline tab-btn" id="tabFavorites" onclick="switchTab('favorites')" style="border-radius: 20px; padding: 0.5rem 1.25rem; font-size: 0.9rem;">Favorites</button>
+            <button class="btn btn-outline tab-btn" id="tabRequests" onclick="switchTab('requests')" style="border-radius: 20px; padding: 0.5rem 1.25rem; font-size: 0.9rem;">Adoption Requests</button>
+        </div>
 
-        <!-- Favorites Section -->
-        <div class="section-label">My Favorites</div>
-        <div id="favoritesSection">
+        <!-- Adopted Pets Tab -->
+        <div id="adoptedPetsSection" class="tab-content">
+            <div class="loading"><div class="spinner"></div><p>Loading...</p></div>
+        </div>
+
+        <!-- Favorites Tab -->
+        <div id="favoritesSection" class="tab-content" style="display: none;">
             <div class="loading"><div class="spinner"></div><p>Loading favorites...</p></div>
         </div>
 
-        <!-- Adoption Requests Section -->
-        <div class="section-label" style="margin-top: 2rem;">My Adoption Requests</div>
-        <div id="adoptionRequests">
+        <!-- Adoption Requests Tab -->
+        <div id="adoptionRequests" class="tab-content" style="display: none;">
             <div class="loading"><div class="spinner"></div><p>Loading requests...</p></div>
         </div>
     </div>
@@ -360,6 +366,16 @@
         window.addEventListener('scroll', () => {
             document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
         });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => { el.classList.remove('active'); el.classList.remove('btn-primary'); el.classList.add('btn-outline'); });
+            const btn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            btn.classList.add('active'); btn.classList.add('btn-primary'); btn.classList.remove('btn-outline');
+            if (tab === 'adopted') document.getElementById('adoptedPetsSection').style.display = '';
+            else if (tab === 'favorites') document.getElementById('favoritesSection').style.display = '';
+            else if (tab === 'requests') document.getElementById('adoptionRequests').style.display = '';
+        }
 
         const obs = new IntersectionObserver((entries) => {
             entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -393,30 +409,48 @@
             } catch (e) { console.error(e); }
         }
 
-        function displayAdoptionRequests(requests) {
-            // Separate adopted (approved) from other requests
+        async function displayAdoptionRequests(requests) {
             const adopted = requests.filter(r => r.status === 'approved');
             const others = requests.filter(r => r.status !== 'approved');
 
-            // Show adopted pets section
             document.getElementById('adoptedCount').textContent = adopted.length;
+
+            // Fetch full pet details for adopted pets (to get images, breed, etc.)
             const adoptedSection = document.getElementById('adoptedPetsSection');
-            const adoptedLabel = document.getElementById('adoptedLabel');
             if (adopted.length) {
-                adoptedLabel.style.display = '';
-                adoptedSection.innerHTML = '<div class="favorites-grid">' + adopted.map(req => `
+                const petDetails = {};
+                await Promise.all(adopted.map(async req => {
+                    try {
+                        const r = await fetch(`/api/pets/${req.pet_id}`, { credentials: 'include' });
+                        const data = await r.json();
+                        if (data.ok) petDetails[req.pet_id] = data.pet;
+                    } catch(e) {}
+                }));
+
+                adoptedSection.innerHTML = '<div class="favorites-grid">' + adopted.map(req => {
+                    const pet = petDetails[req.pet_id];
+                    const hasImage = pet && pet.image_url && pet.image_url.length > 0;
+                    const avatarHtml = hasImage
+                        ? `<img src="${pet.image_url}" alt="${req.pet_name}" class="fav-card-avatar" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=\\'fav-card-avatar-ph\\'>${getPetEmoji(req.pet_type)}</div>';">`
+                        : `<div class="fav-card-avatar-ph">${getPetEmoji(req.pet_type)}</div>`;
+                    return `
                     <div class="fav-card">
-                        <div class="fav-card-top" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
-                            <span class="fav-type-badge" style="background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);border:1px solid rgba(255,255,255,0.2);">${req.pet_type}</span>
-                            <div class="fav-card-avatar-wrap"><div class="fav-card-avatar-ph">${getPetEmoji(req.pet_type)}</div></div>
+                        <div class="fav-card-top">
+                            <span class="fav-type-badge" style="background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);border:1px solid rgba(255,255,255,0.2);">${pet ? pet.type : req.pet_type || ''}</span>
+                            <div class="fav-card-avatar-wrap">${avatarHtml}</div>
                         </div>
                         <div class="fav-card-body">
                             <div class="fav-card-title">
                                 <h3>${req.pet_name}</h3>
-                                <span class="fav-breed" style="color: #22c55e;">Adopted</span>
+                                <span class="fav-breed">${pet ? pet.breed + ' · ' + pet.color : req.pet_type}</span>
                             </div>
+                            ${pet ? `<div class="fav-details">
+                                <div class="fav-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${pet.age_months} mo</div>
+                                <div class="fav-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22c-4.97 0-9-2.24-9-5v-6c0-2.76 4.03-5 9-5s9 2.24 9 5v6c0 2.76-4.03 5-9 5z"/></svg>${pet.size}</div>
+                                <div class="fav-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${pet.gender}</div>
+                            </div>` : ''}
                             <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
-                                <p>Adopted on ${new Date(req.updated_at).toLocaleDateString()}</p>
+                                <p style="color: #22c55e; font-weight: 600;">Adopted on ${new Date(req.updated_at).toLocaleDateString()}</p>
                                 ${req.message ? `<p style="margin-top:0.25rem;font-style:italic;">"${req.message}"</p>` : ''}
                             </div>
                             <div class="fav-actions" style="margin-top: 0.75rem;">
@@ -426,11 +460,10 @@
                                 </a>
                             </div>
                         </div>
-                    </div>
-                `).join('') + '</div>';
+                    </div>`;
+                }).join('') + '</div>';
             } else {
-                adoptedLabel.style.display = 'none';
-                adoptedSection.innerHTML = '';
+                adoptedSection.innerHTML = '<div class="empty-state"><p>No adopted pets yet.</p><p>Start by taking the quiz or browsing pets!</p></div>';
             }
 
             // Show remaining requests (pending/rejected)
@@ -447,12 +480,44 @@
                             <span class="match-label" style="font-size: 0.8rem;">${req.status.toUpperCase()}</span>
                         </div>
                     </div>
-                    ${req.message ? `<div class="pet-description">"${req.message}"</div>` : ''}
-                    <div style="display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    ${req.message ? `<div class="pet-description" id="msg-${req.id}">"${req.message}"</div>` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
                         <span>Submitted ${new Date(req.created_at).toLocaleDateString()}</span>
+                        ${req.status === 'pending' ? `<button onclick="openEditMessage(${req.id}, \`${(req.message||'').replace(/`/g,'\\`').replace(/\\/g,'\\\\')}\`)" style="background: var(--accent); color: white; border: none; padding: 0.3rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Edit Message</button>` : ''}
                     </div>
                 </div>
             `).join('');
+        }
+
+        function openEditMessage(reqId, currentMsg) {
+            document.getElementById('editMsgId').value = reqId;
+            document.getElementById('editMsgText').value = currentMsg;
+            document.getElementById('editMsgModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editMsgModal').style.display = 'none';
+        }
+
+        async function saveEditMessage() {
+            const reqId = document.getElementById('editMsgId').value;
+            const newMsg = document.getElementById('editMsgText').value.trim();
+            if (!newMsg) { alert('Message cannot be empty'); return; }
+            try {
+                const r = await fetch(`/api/adoptions/${reqId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ message: newMsg })
+                });
+                const data = await r.json();
+                if (data.ok) {
+                    closeEditModal();
+                    loadAdoptionRequests();
+                } else {
+                    alert(data.message || 'Failed to update');
+                }
+            } catch (e) { alert('Error updating request'); }
         }
 
         function getStatusColor(s) {
@@ -558,5 +623,18 @@
 
         window.addEventListener('DOMContentLoaded', checkAuth);
     </script>
+
+    <!-- Edit Adoption Message Modal -->
+    <div id="editMsgModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:var(--card-bg, #fff); border-radius:16px; padding:2rem; max-width:500px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+            <h3 style="margin:0 0 1rem; color:var(--text-primary, #1a1a2e);">Edit Adoption Message</h3>
+            <input type="hidden" id="editMsgId">
+            <textarea id="editMsgText" rows="5" style="width:100%; border:1px solid var(--border, #e2e8f0); border-radius:8px; padding:0.75rem; font-size:0.95rem; resize:vertical; background:var(--input-bg, #fff); color:var(--text-primary, #1a1a2e); box-sizing:border-box;"></textarea>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1rem;">
+                <button onclick="closeEditModal()" style="padding:0.5rem 1.25rem; border-radius:8px; border:1px solid var(--border, #e2e8f0); background:transparent; cursor:pointer; color:var(--text-primary, #1a1a2e);">Cancel</button>
+                <button onclick="saveEditMessage()" style="padding:0.5rem 1.25rem; border-radius:8px; border:none; background:var(--accent, #22c55e); color:white; cursor:pointer;">Save</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

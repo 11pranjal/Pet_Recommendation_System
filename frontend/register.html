@@ -82,7 +82,7 @@
                             <span class="label-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
                             Phone
                         </label>
-                        <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567" autocomplete="tel">
+                        <input type="tel" id="phone" name="phone" placeholder="98XXXXXXXX" autocomplete="tel" pattern="(\+?977[- ]?)?\d{10}" title="Enter a valid Nepal phone number (e.g. 9841234567)">
                     </div>
                     <div class="form-group">
                         <label for="address">
@@ -231,6 +231,22 @@
                 matchDiv.className = 'password-match match-error';
             }
         }
+
+        // Live phone validation on register form
+        document.getElementById('phone').addEventListener('input', function() {
+            const val = this.value.trim();
+            if (!val) { this.style.border = ''; this.style.boxShadow = ''; return; }
+            let cleaned = val.replace(/[\s\-\(\)]/g, '');
+            if (cleaned.startsWith('+977')) cleaned = cleaned.slice(4);
+            else if (cleaned.startsWith('977') && cleaned.length > 10) cleaned = cleaned.slice(3);
+            if (/^(96|97|98)\d{8}$/.test(cleaned)) {
+                this.style.border = '2px solid #22c55e';
+                this.style.boxShadow = '0 0 0 3px rgba(34,197,94,0.1)';
+            } else {
+                this.style.border = '2px solid #ef4444';
+                this.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.1)';
+            }
+        });
 
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
