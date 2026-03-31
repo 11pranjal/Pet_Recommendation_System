@@ -536,6 +536,29 @@ class PetRecommendationEngine:
                             break
             
             top_results = diverse_results[:top_k]
+        elif not pet_type_filter and not user_specified_type and not user_specified_breed and len(results) > top_k:
+            # No type filter — ensure type diversity in results
+            results.sort(key=lambda x: x['final'], reverse=True)
+            by_type = defaultdict(list)
+            for r in results:
+                by_type[r['pet']['type']].append(r)
+
+            if len(by_type) > 1:
+                diverse_results = []
+                type_indices = {t: 0 for t in by_type}
+                types_list = sorted(by_type.keys(), key=lambda t: by_type[t][0]['final'], reverse=True)
+
+                while len(diverse_results) < top_k and any(type_indices[t] < len(by_type[t]) for t in types_list):
+                    for pet_type in types_list:
+                        if type_indices[pet_type] < len(by_type[pet_type]):
+                            diverse_results.append(by_type[pet_type][type_indices[pet_type]])
+                            type_indices[pet_type] += 1
+                            if len(diverse_results) >= top_k:
+                                break
+
+                top_results = diverse_results[:top_k]
+            else:
+                top_results = results[:top_k]
         else:
             # Normal ranking by final score
             results.sort(key=lambda x: x['final'], reverse=True)
@@ -623,19 +646,30 @@ class PetRecommendationEngine:
             prefs['kid_friendly'] = True
         
         # --- Meat consumption ---
+        # Check meat-eating (non-veg) patterns FIRST because "non-veg" contains "veg"
+        meat_patterns = [
+            r'\bnon[\s-]?veg\b', r'\bnon[\s-]?vegetarian\b',
+            r'\bmeat[\s-]?based\b', r'\bmeat[\s-]?eater\b', r'\bcarnivore\b',
+            r'\beats? meat\b', r'\beat meat\b', r'\beat\b.*\bmeat\b',
+            r'\blikes? meat\b',
+        ]
         non_meat_patterns = [
             r'\bno meat\b', r'\bnon[\s-]?meat\b', r'\bvegetarian\b', r'\bvegan\b',
-            r'\bherbivore\b', r'\bplant[\s-]?based\b', r'\bno[\s-]?meat[\s-]?diet\b',
-            r'\bdoesn.t eat meat\b', r'\bwithout meat\b'
+            r'\bveg\b', r'\bherbivore\b', r'\bplant[\s-]?based\b',
+            r'\bno[\s-]?meat[\s-]?diet\b', r'\bdoesn.t eat meat\b', r'\bwithout meat\b',
+            r'\bdon.?t eat\b.*\bmeat\b', r'\bnot eat\b.*\bmeat\b',
+            r'\bmeat[\s-]?free\b', r'\bavoid\b.*\bmeat\b',
         ]
-        meat_patterns = [
-            r'\bmeat[\s-]?based\b', r'\bmeat[\s-]?eater\b', r'\bcarnivore\b',
-            r'\beats meat\b'
-        ]
-        if any(re.search(p, q) for p in non_meat_patterns):
-            prefs['meat_consumption'] = False
-        elif any(re.search(p, q) for p in meat_patterns):
+        # Check "non-veg" explicitly first — it means meat eater, not negation of veg
+        if re.search(r'\bnon[\s-]?veg\b', q) or re.search(r'\bnon[\s-]?vegetarian\b', q):
             prefs['meat_consumption'] = True
+        else:
+            has_negation = any(re.search(p, q) for p in non_meat_patterns)
+            has_meat = any(re.search(p, q) for p in meat_patterns)
+            if has_negation:
+                prefs['meat_consumption'] = False
+            elif has_meat:
+                prefs['meat_consumption'] = True
         
         # --- Health ---
         if re.search(r'\b(excellent|perfect|great) health\b', q):
