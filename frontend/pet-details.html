@@ -239,17 +239,6 @@
         }
         .profile-btn svg { width: 18px; height: 18px; }
 
-        .profile-btn-adopt {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 3px 12px rgba(61, 139, 99, 0.25);
-        }
-        .profile-btn-adopt:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(61, 139, 99, 0.3);
-        }
-
         .profile-btn-fav {
             background: transparent;
             border: 1.5px solid var(--border);
@@ -265,94 +254,6 @@
             color: #ef4444;
             background: #fef2f2;
         }
-
-        /* Adoption Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s;
-        }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-
-        .modal-overlay .adopt-modal {
-            display: block !important;
-            position: relative;
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
-            padding: 2rem;
-            width: 100%;
-            max-width: 480px;
-            transform: translateY(10px);
-            transition: transform 0.3s;
-            left: auto; top: auto;
-            height: auto;
-            backdrop-filter: none;
-            z-index: auto;
-        }
-        .modal-overlay.active .adopt-modal { transform: translateY(0); }
-
-        .adopt-modal h3 {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        .adopt-modal p {
-            color: var(--text-secondary);
-            font-size: 0.88rem;
-            margin-bottom: 1.25rem;
-        }
-
-        .adopt-modal textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            font-size: 0.88rem;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 100px;
-            margin-bottom: 1rem;
-            transition: border-color 0.2s;
-        }
-        .adopt-modal textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(61, 139, 99, 0.1);
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .modal-actions .profile-btn { flex: 1; }
-
-        .modal-btn-cancel {
-            background: var(--bg-muted);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .modal-btn-cancel:hover { background: var(--border); }
-
-        #adoptMsgBox {
-            margin-top: 0.75rem;
-            padding: 0.5rem 0.75rem;
-            border-radius: 8px;
-            font-size: 0.82rem;
-            font-weight: 500;
-            text-align: center;
-            display: none;
-        }
-        #adoptMsgBox.adopt-msg-success { display: block; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-        #adoptMsgBox.adopt-msg-error { display: block; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
         /* Loading */
         .profile-loading {
@@ -409,22 +310,6 @@
             <div class="profile-loading">
                 <div class="spinner"></div>
                 <p>Loading pet profile...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Adoption Modal -->
-    <div class="modal-overlay" id="adoptionModal">
-        <div class="adopt-modal">
-            <h3>Adopt <span id="modalPetName"></span></h3>
-            <p>Tell us why you'd like to adopt this pet. This helps us match pets with the best homes.</p>
-            <textarea id="adoptionMessage" placeholder="I would love to adopt this pet because..."></textarea>
-            <div id="adoptMsgBox"></div>
-            <div class="modal-actions">
-                <button class="profile-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
-                <button class="profile-btn profile-btn-adopt" onclick="submitAdoption()" id="submitAdoptBtn">
-                    Submit Request
-                </button>
             </div>
         </div>
     </div>
@@ -581,10 +466,6 @@
                         </div>
 
                         <div class="profile-actions">
-                            <button class="profile-btn profile-btn-adopt" onclick="openAdoptionModal()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                Adopt
-                            </button>
                             <button class="profile-btn profile-btn-fav ${favBtnClass}" id="favBtn" onclick="toggleFavorite()">
                                 ${favIcon}
                                 ${favBtnText}
@@ -593,50 +474,6 @@
                     </div>
                 </div>
             `;
-        }
-
-        function openAdoptionModal() {
-            document.getElementById('modalPetName').textContent = petData.name;
-            document.getElementById('adoptionModal').classList.add('active');
-            document.getElementById('adoptMsgBox').className = '';
-            document.getElementById('adoptMsgBox').textContent = '';
-        }
-
-        function closeModal() {
-            document.getElementById('adoptionModal').classList.remove('active');
-        }
-
-        async function submitAdoption() {
-            const msg = document.getElementById('adoptionMessage').value.trim();
-            const msgBox = document.getElementById('adoptMsgBox');
-            const btn = document.getElementById('submitAdoptBtn');
-
-            btn.disabled = true;
-            btn.textContent = 'Submitting...';
-
-            try {
-                const r = await fetch('/api/adoptions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pet_id: petId, message: msg }),
-                    credentials: 'include'
-                });
-                const data = await r.json();
-                if (data.ok) {
-                    msgBox.textContent = 'Adoption request submitted successfully!';
-                    msgBox.className = 'adopt-msg-success';
-                    setTimeout(() => closeModal(), 2000);
-                } else {
-                    msgBox.textContent = data.message || 'Failed to submit request.';
-                    msgBox.className = 'adopt-msg-error';
-                }
-            } catch {
-                msgBox.textContent = 'Error submitting request. Please try again.';
-                msgBox.className = 'adopt-msg-error';
-            }
-
-            btn.disabled = false;
-            btn.textContent = 'Submit Request';
         }
 
         async function toggleFavorite() {
@@ -656,11 +493,6 @@
             catch {}
             window.location.href = '/';
         }
-
-        // Close modal on overlay click
-        document.getElementById('adoptionModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
 
         window.addEventListener('DOMContentLoaded', loadPet);
     </script>
