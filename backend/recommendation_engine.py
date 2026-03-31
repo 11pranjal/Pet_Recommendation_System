@@ -216,28 +216,49 @@ class PetRecommendationEngine:
         query_lower = query_text.lower()
         user_specified_type = None
         user_specified_breed = None
-        
-        # Check for generic pet types
-        for pet_type in ['dog', 'cat', 'bird', 'rabbit']:
-            if pet_type in query_lower:
-                user_specified_type = pet_type.capitalize()
-                break
-        
-        # Check for specific breed names
-        all_breeds = set(pet['breed'] for pet in self.pets_database)
-        for breed in all_breeds:
-            if breed.lower() in query_lower:
-                user_specified_breed = breed
-                # Also infer the pet type from the breed
-                for pet in self.pets_database:
-                    if pet['breed'] == breed:
-                        user_specified_type = pet['type']
-                        break
-                break
-        
-        # If user specified a type, use it as filter
-        if user_specified_type:
-            pet_type_filter = user_specified_type
+
+        # Use SBERT semantic similarity to detect which pet type the query is about
+        if pet_type_filter:
+            pet_type_descriptions = {
+                'dog': 'dog puppy canine',
+                'cat': 'cat kitten feline',
+                'bird': 'bird parrot parakeet budgie cockatiel canary finch macaw avian',
+                'rabbit': 'rabbit bunny'
+            }
+            query_embedding = self.sbert_model.encode([query_text])
+            type_embeddings = self.sbert_model.encode(list(pet_type_descriptions.values()))
+            similarities = cosine_similarity(query_embedding, type_embeddings)[0]
+            type_names = list(pet_type_descriptions.keys())
+            detected_type = type_names[similarities.argmax()]
+            sorted_scores = sorted(similarities, reverse=True)
+            confidence_gap = sorted_scores[0] - sorted_scores[1]
+
+            # Only block if the query is CLEARLY about a specific different pet type.
+            # A large gap between 1st and 2nd best means the model is confident
+            # the query refers to a specific type (e.g. "parrot", "puppy", "lazy dog").
+            # A small gap means the text is generic (e.g. "small fluffy pet") so we allow it.
+            if detected_type != pet_type_filter.lower() and confidence_gap > 0.1:
+                return []
+        else:
+            # No filter selected — detect type from text for auto-filtering
+            for pet_type in ['dog', 'cat', 'bird', 'rabbit']:
+                if pet_type in query_lower:
+                    user_specified_type = pet_type.capitalize()
+                    break
+
+            # Check for specific breed names
+            all_breeds = set(pet['breed'] for pet in self.pets_database)
+            for breed in all_breeds:
+                if breed.lower() in query_lower:
+                    user_specified_breed = breed
+                    for pet in self.pets_database:
+                        if pet['breed'] == breed:
+                            user_specified_type = pet['type']
+                            break
+                    break
+
+            if user_specified_type:
+                pet_type_filter = user_specified_type
         
         # Extract keywords for physical attributes
         keywords = self._extract_keywords(query_text)
@@ -646,9 +667,10 @@ class PetRecommendationEngine:
             prefs['size'] = last_size
         
         # --- Color (all mentioned colors become a hard filter) ---
-        # Covers all colors in the dataset: black, white, brown, golden, gray, grey,
+        # Dataset colors: black, white, brown, golden, gray, grey,
         # orange, cream, tan, red, green, blue, silver, sable, fawn, beige
-        # Also handles "black and red" → ['black', 'red']
+        # Also detects non-dataset colors (pink, purple, etc.) to prevent
+        # recommending pets when the requested color doesn't exist
         color_words = {
             'black': 'black', 'white': 'white', 'brown': 'brown',
             'golden': 'golden', 'gray': 'gray', 'grey': 'grey',
@@ -656,6 +678,10 @@ class PetRecommendationEngine:
             'red': 'red', 'green': 'green', 'blue': 'blue',
             'silver': 'silver', 'sable': 'sable', 'fawn': 'fawn',
             'beige': 'beige',
+            'pink': 'pink', 'purple': 'purple', 'yellow': 'yellow',
+            'violet': 'violet', 'magenta': 'magenta', 'turquoise': 'turquoise',
+            'maroon': 'maroon', 'teal': 'teal', 'indigo': 'indigo',
+            'lavender': 'lavender', 'cyan': 'cyan',
         }
         found_colors = []
         for cw in color_words:
