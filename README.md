@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Pet Recommendation System
 
 A machine learning-powered pet recommendation system that matches users with suitable pets using two ML approaches — a structured quiz powered by **K-Nearest Neighbors (KNN)** and a natural language search powered by **Sentence-BERT (SBERT)**. Built as a full-stack web application with user authentication and an admin panel.
@@ -268,3 +269,7 @@ python setup_admin.py create
 
 This project is for educational purposes.
 Thank you all
+=======
+# Pet_Recommendation_System
+Major project
+>>>>>>> 7ee248cc3950277c55a0c89d063e149158bd1202
