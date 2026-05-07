@@ -125,7 +125,7 @@ Pet-Recommendation-System/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Shilu-Poudel/Pet-Recommendation-System.git
+git clone git@github.com:11pranjal/Pet_Recommendation_System.git
 cd Pet-Recommendation-System
 ```
 
