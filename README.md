@@ -267,3 +267,4 @@ python setup_admin.py create
 ## License
 
 This project is for educational purposes.
+Thank you all
